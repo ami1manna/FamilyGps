@@ -1,6 +1,6 @@
 const END_POINT ='https://cloud.appwrite.io/v1';
 const PROJECT_ID = '6710acd600336e4368e4';
 const DATABASE_ID = '6710b16a0029ac08aaa2';
-// const USERS_COLLECTION_ID = '6702cc4800180483f9e2';
+const USERS_COLLECTION_ID = '6710bf91003e201d7e2f';
 // const USERS_FRIENDS_COLLECTION_ID = '670584ab0029057cff11';
 // const GROUP_COLLECTION_ID = '6707e0bb003c5ce75a6a';
