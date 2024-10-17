@@ -1,4 +1,3 @@
-// bottom_nav.dart
 import 'package:flutter/material.dart';
 
 class BottomNavBar extends StatefulWidget {
@@ -37,12 +36,12 @@ class _BottomNavBarState extends State<BottomNavBar> with SingleTickerProviderSt
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
-      padding: isSelected ? const EdgeInsets.all(5) : const EdgeInsets.all(0),
+      
       child: Icon(
         icon,
-        size: isSelected ? 35 : 30,
-        color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
-        shadows: const [Shadow(color: Colors.black, blurRadius: 1)],
+        size: isSelected ? 30 : 25,
+        color: isSelected ? Colors.white : Colors.grey,
+        shadows: const [Shadow(color: Colors.black)],
       ),
     );
   }
@@ -52,6 +51,9 @@ class _BottomNavBarState extends State<BottomNavBar> with SingleTickerProviderSt
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: _onItemTapped,
+      selectedItemColor: Colors.white, // Set selected item color
+      unselectedItemColor: Colors.grey, // Set unselected item color
+      backgroundColor: Theme.of(context).primaryColor, // Background color for the entire bar
       items: [
         BottomNavigationBarItem(
           icon: _buildIcon(Icons.map_outlined, _selectedIndex == 0),
@@ -70,6 +72,7 @@ class _BottomNavBarState extends State<BottomNavBar> with SingleTickerProviderSt
           label: 'Account',
         ),
       ],
+      type: BottomNavigationBarType.fixed, // Keep background consistent
     );
   }
 }
