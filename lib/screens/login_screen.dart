@@ -1,3 +1,4 @@
+import 'package:familygps/utils/permissions.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/controllers/auth.dart';
 import 'package:flutter/material.dart';
@@ -28,13 +29,21 @@ class LoginScreen extends StatelessWidget {
     }
     else{
       loginUser(emailController.text , passwordController.text)
-      .then((value)=>{
+      .then((value)async{
         if(value == 'success'){
-          Toast.show(ctx, "Login successful!", ToastType.success),
-          Navigator.pushReplacementNamed(ctx, '/home'),
+          Toast.show(ctx, "Login successful!", ToastType.success);
+          
+          bool permissionsGranted = await arePermissionsGranted();
+
+      // Navigate based on the permissions result
+      if (permissionsGranted) {
+        Navigator.pushReplacementNamed(ctx, '/home');
+      } else {
+        Navigator.pushReplacementNamed(ctx, '/permissions');
+      }
         }
         else{
-          Toast.show(ctx, value, ToastType.error),
+          Toast.show(ctx, value, ToastType.error);
         }
       });
     }

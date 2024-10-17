@@ -42,7 +42,7 @@ class _BottomNavBarState extends State<BottomNavBar> with SingleTickerProviderSt
         icon,
         size: isSelected ? 35 : 30,
         color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
-        shadows: const [Shadow(color: Colors.black, blurRadius: 3)],
+        shadows: const [Shadow(color: Colors.black, blurRadius: 1)],
       ),
     );
   }

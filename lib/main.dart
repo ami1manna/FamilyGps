@@ -1,5 +1,6 @@
 import 'package:familygps/screens/home_screen.dart';
 import 'package:familygps/screens/login_screen.dart';
+import 'package:familygps/screens/per_req_screen.dart';
 import 'package:familygps/screens/signup_screen.dart';
 import 'package:familygps/screens/splash_screen.dart';
 import 'package:familygps/widgets/check_session.dart';
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => HomeScreen(),
         '/signup': (context) => const SignupScreen(),
         '/login': (context) => LoginScreen(),
+        '/permissions':(context) => const PermissionRequestScreen(),
       },
     );
   }
