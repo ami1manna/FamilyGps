@@ -3,7 +3,6 @@ import 'package:familygps/controllers/auth.dart';
 import 'package:familygps/models/user_model.dart';
 import 'package:familygps/providers/user_provider.dart';
 import 'package:familygps/screens/map_screen.dart';
-import 'package:familygps/utils/permissions.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/bottom_nav.dart';
 import 'package:flutter/material.dart';
@@ -31,13 +30,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _fetchUser();
-    _requestPermissions();
-  }
-
-  Future<void> _requestPermissions() async {
-    // await getLocPermission(context);
     
   }
+
+
   Future<void> _fetchUser() async {
     try {
       final user = await getUser();
@@ -107,8 +103,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ? const Center(child: Text('No user found'))
               : Column(
                   children: [
-                    const SizedBox(height: 100),
-                    const SizedBox(height: 10),
+                   
                     Expanded(
                       // The section of the page that changes based on selected tab
                       child: IndexedStack(

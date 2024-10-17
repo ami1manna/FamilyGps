@@ -2,7 +2,6 @@
 import 'package:familygps/controllers/auth.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});

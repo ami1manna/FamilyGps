@@ -1,4 +1,5 @@
 import 'package:familygps/utils/permissions.dart';
+import 'package:familygps/widgets/google_map.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -16,9 +17,15 @@ class _MapScreenState extends State<MapScreen> {
     
   }
   
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Text('Map Screen'),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        child: const GoogleMapWidget(),
+       
+      ),
     );
   }
 }

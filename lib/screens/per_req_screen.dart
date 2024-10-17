@@ -3,7 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart'; // For location permission handling
 
 class PermissionRequestScreen extends StatefulWidget {
-  const PermissionRequestScreen({Key? key}) : super(key: key);
+  const PermissionRequestScreen({super.key});
 
   @override
   _PermissionRequestScreenState createState() => _PermissionRequestScreenState();

@@ -1,4 +1,3 @@
-import 'package:appwrite/appwrite.dart';
 import 'package:familygps/controllers/auth.dart';
 import 'package:familygps/utils/permissions.dart';
 import 'package:flutter/material.dart';
