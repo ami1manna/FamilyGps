@@ -7,7 +7,9 @@ import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
 void main() {
+ 
   runApp(ProviderScope(
     // Wraps your app with ProviderScope
     child: MyApp(),

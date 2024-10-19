@@ -1,9 +1,11 @@
 allprojects {
     repositories {
-        google()
-        mavenCentral()
+        google()          // Google's repository for Android dependencies
+        mavenCentral()    // Maven Central repository for standard dependencies
+       
     }
 }
+
 
 rootProject.buildDir = "../build"
 subprojects {

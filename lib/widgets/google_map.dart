@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class GoogleMapWidget extends StatefulWidget {
-  const GoogleMapWidget({Key? key}) : super(key: key);
+  const GoogleMapWidget({super.key});
 
   @override
   _GoogleMapWidgetState createState() => _GoogleMapWidgetState();
@@ -26,7 +26,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
         onMapCreated: _onMapCreated,
         initialCameraPosition: CameraPosition(
           target: _initialPosition,
-          zoom: 12.0,
+          zoom: 10.0,
         ),
         mapType: MapType.normal, // You can change this to satellite, terrain, etc.
         myLocationEnabled: true, // Enable the user's location on the map

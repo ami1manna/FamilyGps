@@ -1,6 +1,4 @@
-import 'package:familygps/utils/permissions.dart';
 import 'package:familygps/widgets/google_map.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class MapScreen extends StatefulWidget {
@@ -20,10 +18,10 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: SizedBox(
         width: double.infinity,
         height: double.infinity,
-        child: const GoogleMapWidget(),
+        child: Text('hello'),// GoogleMapWidget(),
        
       ),
     );

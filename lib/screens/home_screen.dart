@@ -3,10 +3,13 @@ import 'package:familygps/controllers/auth.dart';
 import 'package:familygps/models/user_model.dart';
 import 'package:familygps/providers/user_provider.dart';
 import 'package:familygps/screens/map_screen.dart';
+import 'package:familygps/utils/sensors.dart';
+import 'package:familygps/utils/store_data.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/bottom_nav.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -23,6 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const MapScreen(),
     const MapScreen(),
   ];
+
   bool isLoading = true;
   User? _currentUser;
 
@@ -30,9 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _fetchUser();
-    
   }
-
 
   Future<void> _fetchUser() async {
     try {
@@ -43,6 +45,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           isLoading = false;
           setUserState();
         });
+
+        // Save user ID to local storage
+        print(user.$id);
+        await LocationServiceRepository.saveUserId(_currentUser!.$id);
+        await LocationService.startLocationTracking(); // Start location tracking
+
       } else {
         setState(() {
           isLoading = false;
@@ -103,9 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ? const Center(child: Text('No user found'))
               : Column(
                   children: [
-                   
                     Expanded(
-                      // The section of the page that changes based on selected tab
                       child: IndexedStack(
                         index: _currentIndex,
                         children: _pages, // Display the relevant page

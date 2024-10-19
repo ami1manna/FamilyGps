@@ -4,7 +4,9 @@ class UserModel {
   final String email;
   final String? password;
   final bool? loggedIn;
-  final bool logInAsGoogle;
+ 
+  double? lat;
+  double? long;
 
   UserModel({
     required this.name,
@@ -12,6 +14,7 @@ class UserModel {
     this.password,
     this.userid,
     this.loggedIn,
-    this.logInAsGoogle = false,
+    this.lat,
+    this.long,
   });
 }
