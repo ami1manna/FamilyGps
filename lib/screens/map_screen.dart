@@ -21,7 +21,7 @@ class _MapScreenState extends State<MapScreen> {
       body: SizedBox(
         width: double.infinity,
         height: double.infinity,
-        child: Text('hello'),// GoogleMapWidget(),
+        child: GoogleMapWidget(),
        
       ),
     );
