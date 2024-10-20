@@ -123,7 +123,7 @@ Future<String> deleteUserFromGroup(String groupCode, String userId) async {
           data: {'groups': userGroups},
         );
 
-        return 'User deleted from group and group code removed from user document';
+        return 'User deleted successfully';
       } else {
         return 'User is not a member of this group';
       }

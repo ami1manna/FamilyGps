@@ -83,9 +83,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
 
       String result = await _groupOperation.deleteUserFromGroup(groupCode, userId);
       if (result == 'User deleted successfully') {
+        Toast.show(context, result , ToastType.success);
         _fetchGroupDetails();
       } else {
-       Toast.show(context, result , ToastType.success);
+       Toast.show(context, result , ToastType.error);
       }
     } catch (e) {
       print('Error deleting user: $e');
