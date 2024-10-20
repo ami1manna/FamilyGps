@@ -11,7 +11,7 @@ class GroupDetailScreen extends StatefulWidget {
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
   final TextEditingController _memberController = TextEditingController();
-  List<String> _members = [];
+  List<Map<String, String>> _members = [];  // Updated to store user details (name and email)
   bool _isLoading = false;
   String _groupName = "Loading...";
   late String groupCode;
@@ -31,7 +31,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       _isLoading = true;
     });
     try {
-      List<String> members = await _groupOperation.fetchGroupMembers(groupCode);
+      List<Map<String, String>> members = await _groupOperation.fetchGroupMembers(groupCode);  // Updated return type
       String groupName = await _groupOperation.fetchGroupNameByCode(groupCode);
 
       setState(() {
@@ -83,10 +83,10 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
 
       String result = await _groupOperation.deleteUserFromGroup(groupCode, userId);
       if (result == 'User deleted successfully') {
-        Toast.show(context, result , ToastType.success);
+        Toast.show(context, result, ToastType.success);
         _fetchGroupDetails();
       } else {
-       Toast.show(context, result , ToastType.error);
+        Toast.show(context, result, ToastType.error);
       }
     } catch (e) {
       print('Error deleting user: $e');
@@ -97,28 +97,27 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     }
   }
 
-Future<void> _deleteGroup() async {
-  try {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _deleteGroup() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
 
-    String result = await _groupOperation.deleteGroup(groupCode);
-    if (result == 'Group deleted successfully') {
-      Navigator.pop(context, true); // Pass true to indicate the group was deleted
-      Toast.show(context,result, ToastType.success);
-    } else {
-      Toast.show(context,result, ToastType.error);
+      String result = await _groupOperation.deleteGroup(groupCode);
+      if (result == 'Group deleted successfully') {
+        Navigator.pop(context, true); // Pass true to indicate the group was deleted
+        Toast.show(context, result, ToastType.success);
+      } else {
+        Toast.show(context, result, ToastType.error);
+      }
+    } catch (e) {
+      print('Error deleting group: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-  } catch (e) {
-    print('Error deleting group: $e');
-  } finally {
-    setState(() {
-      _isLoading = false;
-    });
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -167,12 +166,16 @@ Future<void> _deleteGroup() async {
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 leading: const Icon(Icons.person, color: Colors.purple),
                                 title: Text(
-                                  _members[index],
+                                  _members[index]['name'] ?? 'Unknown',
                                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  _members[index]['email'] ?? 'Unknown',
+                                  style: TextStyle(fontSize: 14, color: Colors.grey),
                                 ),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteUser(_members[index]),
+                                  onPressed: () => _deleteUser(_members[index]['userId']!),
                                 ),
                               ),
                             );

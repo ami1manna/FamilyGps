@@ -2,10 +2,16 @@ import 'package:appwrite/appwrite.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 
 class UsersDatabaseOperations {
-  final Client client;
+   late Client client;
+  late Databases databases;
 
-  final Databases databases;
-  UsersDatabaseOperations(this.client) : databases = Databases(client);
+  UsersDatabaseOperations() {
+    client = Client()
+        .setEndpoint(END_POINT) // Your Appwrite endpoint
+        .setProject(PROJECT_ID) // Your project ID
+        .setSelfSigned();
+    databases = Databases(client);
+  }
   // Function to create a new user
   Future<void> addUserToDatabase(
       String userId, String name, String email, String password) async {
