@@ -133,7 +133,7 @@ class GroupDbOperation {
   }
 
   // Function to fetch all groups a user is a member of
-  Future<List<String>> fetchUserGroups(String userId) async {
+  Future<Map<String, dynamic>> fetchUserGroups(String userId) async {
     try {
       // Fetch the user's document which contains the group codes
       Document userDoc = await databases.getDocument(
@@ -142,12 +142,13 @@ class GroupDbOperation {
         documentId: userId,
       );
 
-      // Extract group codes from the user's document
-      List<dynamic> groupCodes = userDoc.data['groups'] ?? [];
+      // Safely extract group codes (assuming 'groups' is a List<String>)
+      List<String> groupCodes = List<String>.from(userDoc.data['groups'] ?? []);
 
       // Fetch all group documents that match the group codes
       List<String> groupNames = [];
       for (var groupCode in groupCodes) {
+        // Fetch each group document by groupCode
         DocumentList groupDoc = await databases.listDocuments(
           databaseId: DATABASE_ID,
           collectionId: GROUP_COLLECTION_ID,
@@ -157,13 +158,21 @@ class GroupDbOperation {
         // If the group is found, add the group name to the list
         if (groupDoc.total > 0) {
           groupNames.add(groupDoc.documents[0].data['groupName']);
+        } else {
+          print('Group with code $groupCode not found.');
         }
       }
 
-      return groupNames;
+      // Return both group names and codes in a Map
+      return {
+        'groupNames': groupNames,
+        'groupCodes': groupCodes,
+      };
     } catch (e) {
       print('Error fetching user groups: $e');
-      return [];
+      return {'groupNames': [], 'groupCodes': []}; // Return empty lists on error
     }
   }
 }
+
+

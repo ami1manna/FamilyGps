@@ -14,6 +14,7 @@ class GroupScreen extends ConsumerStatefulWidget {
 class _GroupScreenState extends ConsumerState<GroupScreen> {
   TextEditingController groupNameController = TextEditingController();
   List<String> userGroups = [];
+  List<String> groupCodes = [];
   bool isLoading = false;
 
   @override
@@ -29,8 +30,10 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
       setState(() {
         isLoading = true;
       });
-      userGroups = await GroupDbOperation().fetchUserGroups(user.userid!);
+      var result = await GroupDbOperation().fetchUserGroups(user.userid!);
       setState(() {
+        userGroups = result['groupNames'];
+        groupCodes = result['groupCodes'];
         isLoading = false;
       });
     }
@@ -64,10 +67,16 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
     }
   }
 
+  // Function to navigate to the Group Detail Screen
+  void _openGroupDetail(String groupCode) {
+    Navigator.pushNamed(context, '/groupDetail', arguments: groupCode);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Column(
+     
+      body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -124,15 +133,20 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                     : ListView.builder(
                         itemCount: userGroups.length,
                         itemBuilder: (context, index) {
-                          return Card(
-                            margin: const EdgeInsets.all(8.0),
-                            child: ListTile(
-                              leading: Icon(Icons.group, color: Theme.of(context).primaryColor),
-                              title: Text(
-                                userGroups[index],
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          return GestureDetector(
+                            onTap: () {
+                              _openGroupDetail(groupCodes[index]); // Pass the group code on tap
+                            },
+                            child: Card(
+                              margin: const EdgeInsets.all(8.0),
+                              child: ListTile(
+                                leading: Icon(Icons.group, color: Theme.of(context).primaryColor),
+                                title: Text(
+                                  userGroups[index],
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                ),
+                                trailing: Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
                               ),
-                              trailing: Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
                             ),
                           );
                         },
