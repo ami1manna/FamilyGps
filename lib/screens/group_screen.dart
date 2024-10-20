@@ -1,6 +1,5 @@
 import 'package:familygps/controllers/group_db_operation.dart';
 import 'package:familygps/providers/user_provider.dart';
-import 'package:familygps/utils/store_data.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +13,30 @@ class GroupScreen extends ConsumerStatefulWidget {
 
 class _GroupScreenState extends ConsumerState<GroupScreen> {
   TextEditingController groupNameController = TextEditingController();
+  List<String> userGroups = [];
+  bool isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserGroups();
+  }
+
+  // Function to fetch groups the user is part of
+  void _fetchUserGroups() async {
+    final user = ref.read(userProvider);
+    if (user != null && user.userid != null) {
+      setState(() {
+        isLoading = true;
+      });
+      userGroups = await GroupDbOperation().fetchUserGroups(user.userid!);
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Function to create a new group
   void _createGroup() async {
     final user = ref.read(userProvider);
     if (user != null && user.userid != null) {
@@ -34,6 +56,8 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
         Toast.show(context, result, ToastType.error); // Display error toast
       } else {
         Toast.show(context, result, ToastType.success); // Display success toast
+        groupNameController.clear(); // Clear the text field
+        _fetchUserGroups(); // Refresh the group list
       }
     } else {
       Toast.show(context, 'Error: User not found.', ToastType.error);
@@ -43,11 +67,11 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+        body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(height: 30),
+          const SizedBox(height: 30),
           Padding(
             padding: const EdgeInsets.all(13.0),
             child: Row(
@@ -76,18 +100,12 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
                         borderSide: BorderSide(color: Theme.of(context).primaryColor),
                       ),
                     ),
-                    style: TextStyle(color: Colors.black),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter Group Name';
-                      }
-                      return null;
-                    },
+                    style: const TextStyle(color: Colors.black),
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 IconButton(
-                  onPressed: () => _createGroup(),
+                  onPressed: _createGroup,
                   icon: Icon(
                     Icons.save,
                     color: Theme.of(context).primaryColor,
@@ -97,10 +115,28 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 20),
           Expanded(
-            child: Center(
-              child: Text('No Groups Yet'),
-            ),
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator()) // Show loading spinner
+                : userGroups.isEmpty
+                    ? const Center(child: Text('No Groups Yet')) // Show message if no groups
+                    : ListView.builder(
+                        itemCount: userGroups.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            margin: const EdgeInsets.all(8.0),
+                            child: ListTile(
+                              leading: Icon(Icons.group, color: Theme.of(context).primaryColor),
+                              title: Text(
+                                userGroups[index],
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              trailing: Icon(Icons.arrow_forward_ios, color: Theme.of(context).primaryColor),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
       ),

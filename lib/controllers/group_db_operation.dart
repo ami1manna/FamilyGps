@@ -4,7 +4,7 @@ import 'package:appwrite/models.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 
 class GroupDbOperation {
-  late Client client; // If you are using a self-signed certificate
+  late Client client;
   late Databases databases;
 
   GroupDbOperation() {
@@ -92,10 +92,78 @@ class GroupDbOperation {
         data: groupData,
       );
 
-      return 'Group created successfully}';
+      // Add group code to the user's document
+      await addGroupToUserDocument(creatorId, groupCode);
+
+      return 'Group created successfully';
     } catch (e) {
       print('ERROR: creating group: $e');
       return 'ERROR: creating group.';
+    }
+  }
+
+  // Function to add the group code to the user's document's groups array
+  Future<void> addGroupToUserDocument(String userId, String groupCode) async {
+    try {
+      // Get the user's document
+      Document userDocument = await databases.getDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID, // Assuming user data is stored here
+        documentId: userId,
+      );
+
+      // Extract the existing groups array (if exists)
+      List<dynamic> groups = userDocument.data['groups'] ?? [];
+
+      // Add the new group code to the array
+      groups.add(groupCode);
+
+      // Update the user's document with the new groups array
+      await databases.updateDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: userId,
+        data: {'groups': groups},
+      );
+
+      print('Group code added to user document successfully');
+    } catch (e) {
+      print('ERROR: updating user document with group code: $e');
+    }
+  }
+
+  // Function to fetch all groups a user is a member of
+  Future<List<String>> fetchUserGroups(String userId) async {
+    try {
+      // Fetch the user's document which contains the group codes
+      Document userDoc = await databases.getDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: userId,
+      );
+
+      // Extract group codes from the user's document
+      List<dynamic> groupCodes = userDoc.data['groups'] ?? [];
+
+      // Fetch all group documents that match the group codes
+      List<String> groupNames = [];
+      for (var groupCode in groupCodes) {
+        DocumentList groupDoc = await databases.listDocuments(
+          databaseId: DATABASE_ID,
+          collectionId: GROUP_COLLECTION_ID,
+          queries: [Query.equal('groupCode', groupCode)],
+        );
+
+        // If the group is found, add the group name to the list
+        if (groupDoc.total > 0) {
+          groupNames.add(groupDoc.documents[0].data['groupName']);
+        }
+      }
+
+      return groupNames;
+    } catch (e) {
+      print('Error fetching user groups: $e');
+      return [];
     }
   }
 }
