@@ -68,9 +68,14 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   }
 
   // Function to navigate to the Group Detail Screen
-  void _openGroupDetail(String groupCode) {
-    Navigator.pushNamed(context, '/groupDetail', arguments: groupCode);
+ void _openGroupDetail(String groupCode) async {
+  final result = await Navigator.pushNamed(context, '/groupDetail', arguments: groupCode);
+
+  // Check if the group was deleted
+  if (result == true) {
+    _fetchUserGroups(); // Refresh the group list
   }
+}
 
   @override
   Widget build(BuildContext context) {
