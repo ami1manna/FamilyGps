@@ -40,6 +40,16 @@ dependencies:
   flutter_riverpod: ^2.5.1
   avatar_glow: ^2.0.1
   awesome_dialog: ^3.2.1
+  google_maps_flutter: ^2.9.0
+  geolocator: ^13.0.1
+  permission_handler: ^11.3.1
+  battery_plus: ^6.0.4
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  shared_preferences: ^2.3.2
+  sensors_plus: ^6.1.0
+ 
+  
   
 dev_dependencies:
   flutter_test:
@@ -51,6 +61,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
