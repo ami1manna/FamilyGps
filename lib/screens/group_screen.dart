@@ -24,20 +24,38 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   }
 
   // Function to fetch groups the user is part of
-  void _fetchUserGroups() async {
-    final user = ref.read(userProvider);
-    if (user != null && user.userid != null) {
-      setState(() {
-        isLoading = true;
-      });
+void _fetchUserGroups() async {
+  final user = ref.read(userProvider);
+  if (user != null && user.userid != null) {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
       var result = await GroupDbOperation().fetchUserGroups(user.userid!);
+
+      if (result != null) {
+        setState(() {
+          userGroups = result['groupNames'] ?? [];
+          groupCodes = result['groupCodes'] ?? [];
+          isLoading = false;
+        });
+        print('Fetched Groups: $userGroups'); // Debugging: log the fetched groups
+        print('Fetched Group Codes: $groupCodes'); // Debugging: log the group codes
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        print('No groups found for user');
+      }
+    } catch (e) {
       setState(() {
-        userGroups = result['groupNames'];
-        groupCodes = result['groupCodes'];
         isLoading = false;
       });
+      print('Error fetching user groups: $e');
     }
   }
+}
 
   // Function to create a new group
   void _createGroup() async {
@@ -68,19 +86,18 @@ class _GroupScreenState extends ConsumerState<GroupScreen> {
   }
 
   // Function to navigate to the Group Detail Screen
- void _openGroupDetail(String groupCode) async {
-  final result = await Navigator.pushNamed(context, '/groupDetail', arguments: groupCode);
+  void _openGroupDetail(String groupCode) async {
+    final result = await Navigator.pushNamed(context, '/groupDetail', arguments: groupCode);
 
-  // Check if the group was deleted
-  if (result == true) {
-    _fetchUserGroups(); // Refresh the group list
+    // Check if the group was deleted
+    if (result == true) {
+      _fetchUserGroups(); // Refresh the group list
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,

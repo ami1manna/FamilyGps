@@ -11,7 +11,7 @@ class GroupDetailScreen extends StatefulWidget {
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
   final TextEditingController _memberController = TextEditingController();
-  List<Map<String, String>> _members = [];  // Updated to store user details (name and email)
+  List<Map<String, dynamic>> _members = [];  // Updated to store user details (name and email)
   bool _isLoading = false;
   String _groupName = "Loading...";
   late String groupCode;
@@ -31,7 +31,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       _isLoading = true;
     });
     try {
-      List<Map<String, String>> members = await _groupOperation.fetchGroupMembers(groupCode);  // Updated return type
+      List<Map<String, dynamic>> members = await _groupOperation.fetchGroupMembers(groupCode);  // Updated return type
       String groupName = await _groupOperation.fetchGroupNameByCode(groupCode);
 
       setState(() {
