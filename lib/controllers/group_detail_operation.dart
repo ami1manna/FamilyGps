@@ -15,25 +15,58 @@ class DetailGroupOperation {
   }
 
   // Fetch all members of a group
-  Future<List<String>> fetchGroupMembers(String groupCode) async {
-    try {
-      // Fetch group details by group code
-      DocumentList groupDoc = await _databases.listDocuments(
-        databaseId: DATABASE_ID,
-        collectionId: GROUP_COLLECTION_ID,
-        queries: [Query.equal('groupCode', groupCode)],
-      );
+// Fetch all members of a group, displaying their names instead of userId
+// Fetch all members of a group, displaying their names and emails
+Future<List<Map<String, String>>> fetchGroupMembers(String groupCode) async {
+  try {
+    // Fetch group details by group code
+    DocumentList groupDoc = await _databases.listDocuments(
+      databaseId: DATABASE_ID,
+      collectionId: GROUP_COLLECTION_ID,
+      queries: [Query.equal('groupCode', groupCode)],
+    );
 
-      if (groupDoc.total > 0) {
-        List<dynamic> members = groupDoc.documents[0].data['members'] ?? [];
-        return members.map<String>((member) => member.toString()).toList();
+    if (groupDoc.total > 0) {
+      List<dynamic> members = groupDoc.documents[0].data['members'] ?? [];
+
+      // Create a list to store user details (name and email) instead of userIds
+      List<Map<String, String>> memberDetails = [];
+
+      // Fetch each user's document by their userId and retrieve their name and email
+      for (String userId in members) {
+        try {
+          // Fetch the user's document by their userId (document ID)
+          Document userDoc = await _databases.getDocument(
+            databaseId: DATABASE_ID,
+            collectionId: USERS_COLLECTION_ID,
+            documentId: userId,
+          );
+
+          // Get the user's name and email
+          String userName = userDoc.data['name'] ?? 'Unknown';
+          String userEmail = userDoc.data['email'] ?? 'Unknown';
+
+          // Add the user's name and email to the list
+          memberDetails.add({
+            'userId': userId,
+            'name': userName,
+            'email': userEmail,
+          });
+        } catch (e) {
+          print('Error fetching user document for $userId: $e');
+        }
       }
-      return [];
-    } catch (e) {
-      print('Error fetching group members: $e');
-      return [];
+
+      return memberDetails; // Return the list of user names and emails
     }
+
+    return [];
+  } catch (e) {
+    print('Error fetching group members: $e');
+    return [];
   }
+}
+
 
   // Add a user to a group
   Future<String> addUserToGroup(String groupCode, String userId) async {
@@ -220,4 +253,5 @@ Future<String> deleteGroup(String groupCode) async {
       return 'Failed to fetch group name';
     }
   }
+
 }

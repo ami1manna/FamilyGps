@@ -65,7 +65,7 @@ class GroupDbOperation {
   }
 
   // Function to create a group document with creatorId and groupName
-  Future<String> createGroup(String creatorId, String groupName) async {
+  Future<String> createGroup(String creatorId, String groupName ) async {
     // Check for duplicate group name
     bool isDuplicate = await isDuplicateGroupName(creatorId, groupName);
     if (isDuplicate) {
@@ -80,8 +80,8 @@ class GroupDbOperation {
       'creatorId': creatorId,
       'groupName': groupName,
       'groupCode': groupCode,
-      'members': [creatorId], // Add creator as the first member
-    };
+      'members': [creatorId], 
+          };
 
     try {
       // Create the document in the group_details collection

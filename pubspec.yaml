@@ -48,7 +48,8 @@ dependencies:
   latlong2: ^0.9.1
   shared_preferences: ^2.3.2
   sensors_plus: ^6.1.0
- 
+  searchfield: ^1.1.6
+  
   
   
 dev_dependencies:
