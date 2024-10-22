@@ -23,14 +23,14 @@ class HomeDraggableBottomSheet extends StatelessWidget {
           ),
           child: ListView(
             controller: scrollController,
-            padding: const EdgeInsets.all(16.0), // Add padding for better layout
+            padding: const EdgeInsets.all(16.0).copyWith(top: 12), // Add padding for better layout
             children: [
               Center(
                 child: Container(
-                  width: 50,
+                  width: 150,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
+                    color: const Color.fromARGB(166, 180, 176, 185),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
