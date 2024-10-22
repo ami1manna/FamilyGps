@@ -1,11 +1,8 @@
 import 'dart:async';
 import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/enums.dart';
 import 'package:appwrite/models.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 import 'package:familygps/controllers/user_operation.dart';
-import 'package:familygps/widgets/Toast.dart';
-import 'package:flutter/material.dart';
 
 Client client = Client()
     .setEndpoint(END_POINT)

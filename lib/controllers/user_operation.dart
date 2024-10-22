@@ -1,8 +1,9 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 
+
 class UsersDatabaseOperations {
-   late Client client;
+  late Client client;
   late Databases databases;
 
   UsersDatabaseOperations() {
@@ -40,8 +41,10 @@ class UsersDatabaseOperations {
     }
   }
 
-  // Function to fetch users from a custom collection based on name or email
-  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+  
+
+  // for fetch user email and names
+  Future<List<String>> fetchUsersList() async {
     try {
       const databaseId = DATABASE_ID; // Ensure this is set correctly
       const collectionId = USERS_COLLECTION_ID; // Ensure this is set correctly
@@ -49,22 +52,15 @@ class UsersDatabaseOperations {
       final result = await databases.listDocuments(
         databaseId: databaseId,
         collectionId: collectionId,
-        queries: [
-          Query.search('name', query),
-          Query.search('email', query),
-        ],
       );
 
-      // Ensure the result.documents is properly typed
-      List<Map<String, dynamic>> users =
-          result.documents.map<Map<String, dynamic>>((doc) {
-        return {
-          'name': doc.data['name'],
-          'email': doc.data['email'],
-        };
-      }).toList();
+// Map the documents to a list of email strings
+    List<String> usersList = result.documents.map<String>((doc) {
+      return doc.data['email'] as String; // Return the email string directly
+    }).toList();
 
-      return users; // Return the properly typed list
+      return usersList;
+
     } on AppwriteException catch (e) {
       print('Error fetching users: ${e.message}');
       return []; // Return an empty list in case of error

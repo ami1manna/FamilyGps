@@ -7,6 +7,7 @@ class UserNotifier extends StateNotifier<UserModel?> {
 
   void setUser(UserModel user) {
     state = user; // Update the user state
+    
   }
 
   void clearUser() {
