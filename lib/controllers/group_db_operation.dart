@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:familygps/storage/localstorage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 
 class GroupDbOperation {
@@ -12,58 +11,75 @@ class GroupDbOperation {
 
   GroupDbOperation() {
     client = Client()
-        .setEndpoint(END_POINT) // Your Appwrite endpoint
-        .setProject(PROJECT_ID) // Your project ID
+        .setEndpoint(END_POINT)
+        .setProject(PROJECT_ID)
         .setSelfSigned();
     databases = Databases(client);
   }
-
-  // Function to create a group document with creatorId and groupNameimport 'dart:convert';  // Import for JSON encoding/decoding
-
 Future<String> createGroup(String creatorId, String groupName) async {
-  String localKey = '$creatorId-$groupName';
-
-  // Check local storage first
-  final prefs = await SharedPreferences.getInstance();
-  if (prefs.containsKey(localKey)) {
-    // Decode the stored JSON string to retrieve group data
-    String storedData = prefs.getString(localKey)!;
-    Map<String, dynamic> storedGroupData = jsonDecode(storedData);
-    return 'Group data found in local storage: $storedGroupData';
-  }
-
-  // Check for duplicate group name
-  bool isDuplicate = await isDuplicateGroupName(creatorId, groupName);
-  if (isDuplicate) {
-    return 'ERROR: A group with the same name already exists for this user.';
-  }
-
-  // Generate a unique group code
-  String groupCode = await generateUniqueCode();
-
-  // Group data to be saved
-  Map<String, dynamic> groupData = {
-    'creatorId': creatorId,
-    'groupName': groupName,
-    'groupCode': groupCode,
-    'members': [creatorId],
-  };
-
   try {
-    // Create the document in the group_details collection
+    // Check for duplicate group name
+    bool isDuplicate = await isDuplicateGroupName(creatorId, groupName);
+    if (isDuplicate) {
+      return 'ERROR: A group with the same name already exists for this user.';
+    }
+
+    String groupCode = await generateUniqueCode();
+
+    // Check if the group already exists with this code
+    Map<String, dynamic>? existingGroup = await LocalStorage.getGroup(groupCode);
+    if (existingGroup != null) {
+      return 'ERROR: Group with this code already exists. Please try again.';
+    }
+
+    Map<String, dynamic> groupData = {
+      'creatorId': creatorId,
+      'groupName': groupName,
+      'groupCode': groupCode,
+      'members': [creatorId],
+    };
+
+    // Create the group in Appwrite
     Document result = await databases.createDocument(
       databaseId: DATABASE_ID,
       collectionId: GROUP_COLLECTION_ID,
-      documentId: 'unique()', // Auto-generate document ID
+      documentId: 'unique()',
       data: groupData,
     );
 
-    // Add group code to the user's document
+    // Update the user's groups in Appwrite
     await addGroupToUserDocument(creatorId, groupCode);
 
-    // Save group data to local storage as a JSON string
-    String jsonGroupData = jsonEncode(groupData);
-    await prefs.setString(localKey, jsonGroupData);
+    // Save group data to local storage
+    await LocalStorage.saveGroup(groupCode, groupData);
+
+    // Update user's groups in local storage
+    Map<String, dynamic>? userData = await LocalStorage.getUser(creatorId);
+    if (userData != null) {
+      List<dynamic> userGroups = userData['groups'] ?? [];
+      if (!userGroups.contains(groupCode)) {
+        userGroups.add(groupCode);
+        userData['groups'] = userGroups;
+        await LocalStorage.saveUser(creatorId, userData);
+      }
+    } else {
+      // If user data doesn't exist in local storage, fetch it from Appwrite
+      Document userDoc = await databases.getDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: creatorId,
+      );
+      userData = {
+        'userId': creatorId,
+        'name': userDoc.data['name'] ?? 'Unknown',
+        'email': userDoc.data['email'] ?? 'Unknown',
+        'groups': [groupCode],
+      };
+      await LocalStorage.saveUser(creatorId, userData);
+    }
+
+    // Add creator to group members in local storage
+    await LocalStorage.addUserToGroup(groupCode, userData!);
 
     return 'Group created successfully';
   } catch (e) {
@@ -71,151 +87,132 @@ Future<String> createGroup(String creatorId, String groupName) async {
     return 'ERROR: creating group.';
   }
 }
+Future<void> addGroupToUserDocument(String userId, String groupCode) async {
+  try {
+    // Update user document in Appwrite
+    Document userDocument = await databases.getDocument(
+      databaseId: DATABASE_ID,
+      collectionId: USERS_COLLECTION_ID,
+      documentId: userId,
+    );
 
-  // Function to add the group code to the user's document's groups array
-  Future<void> addGroupToUserDocument(String userId, String groupCode) async {
-    try {
-      // Check if the user's data exists in local storage
-      List<Map<String, dynamic>> users = await LocalStorage.getUsersFromLocalStorage();
+    List<dynamic> groups = userDocument.data['groups'] ?? [];
+    if (!groups.contains(groupCode)) {
+      groups.add(groupCode);
 
-      // Find the user in local storage
-      Map<String, dynamic>? userDocument = users.firstWhere(
-        (user) => user['id'] == userId,
-        orElse: () => {}, // Return an empty map if not found
+      await databases.updateDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: userId,
+        data: {'groups': groups},
       );
+    }
 
-      // If user is found in local storage, update the groups list there
-      if (userDocument.isNotEmpty) {
-        List<dynamic> groups = userDocument['groups'] ?? [];
-        if (!groups.contains(groupCode)) {
-          groups.add(groupCode);
+    // Update user data in local storage
+    Map<String, dynamic>? userData = await LocalStorage.getUser(userId);
+    if (userData != null) {
+      List<dynamic> userGroups = userData['groups'] ?? [];
+      if (!userGroups.contains(groupCode)) {
+        userGroups.add(groupCode);
+        userData['groups'] = userGroups;
+        await LocalStorage.saveUser(userId, userData);
+      }
+    } else {
+      userData = {
+        'userId': userId,
+        'name': userDocument.data['name'] ?? 'Unknown',
+        'email': userDocument.data['email'] ?? 'Unknown',
+        'groups': [groupCode],
+      }; // Fetch user data from Appwrite if it doesn't exist in local storage
+      await LocalStorage.saveUser(userId, userData);
+    }
+  } catch (e) {
+    print('ERROR updating user groups in database: $e');
+  }
+}
+ 
+ Future<Map<String, List<String>>> fetchUserGroups(String userId) async {
+  try {
+    List<String> groupNames = [];
+    List<String> groupCodes = [];
 
-          // Update user in local storage
-          await LocalStorage.updateUserInLocalStorage(userId, {
-            'id': userId,
-            'groups': groups,
-          });
-
-          print('Group code added to user document in local storage successfully');
-        }
-      } else {
-        // If the user is not found in local storage, fetch from database
-        Document userDocument = await databases.getDocument(
-          databaseId: DATABASE_ID,
-          collectionId: USERS_COLLECTION_ID,
-          documentId: userId,
-        );
-
-        // Extract the existing groups array (if exists)
-        List<dynamic> groups = userDocument.data['groups'] ?? [];
-
-        // Add the new group code to the array if it doesn't already exist
-        if (!groups.contains(groupCode)) {
-          groups.add(groupCode);
-
-          // Update the user's document with the new groups array in the database
-          await databases.updateDocument(
-            databaseId: DATABASE_ID,
-            collectionId: USERS_COLLECTION_ID,
-            documentId: userId,
-            data: {'groups': groups},
-          );
-
-          // Now that the database has been updated, update local storage as well
-          await LocalStorage.updateUserInLocalStorage(userId, {
-            'id': userId,
-            'groups': groups,
-          });
+    Map<String, dynamic>? userData = await LocalStorage.getUser(userId);
+    if (userData != null && userData['groups'] != null) {
+      List<dynamic> userGroups = userData['groups'];
+      for (String groupCode in userGroups) {
+        Map<String, dynamic>? groupData = await LocalStorage.getGroup(groupCode);
+        if (groupData != null && !groupCodes.contains(groupCode)) {
+          groupNames.add(groupData['groupName']);
+          groupCodes.add(groupCode);
         }
       }
-    } catch (e) {
-      print('ERROR updating user groups in database: $e');
     }
-  }
 
-  // Function to check for duplicate group name
+    if (groupNames.isEmpty) {
+      Document result = await databases.getDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: userId,
+      );
+
+      List<dynamic> groups = result.data['groups'] ?? [];
+
+      for (String groupCode in groups) {
+        if (! groupCodes.contains(groupCode)) {
+          DocumentList groupDoc = await databases.listDocuments(
+            databaseId: DATABASE_ID,
+            collectionId: GROUP_COLLECTION_ID,
+            queries: [Query.equal('groupCode', groupCode)],
+          );
+
+          if (groupDoc.documents.isNotEmpty) {
+            String groupName = groupDoc.documents.first.data['groupName'];
+            groupNames.add(groupName);
+            groupCodes.add(groupCode);
+
+            await LocalStorage.saveGroup(groupCode, {
+              'groupName': groupName,
+              'groupCode': groupCode,
+              'members': [userId],
+            });
+          }
+        }
+      }
+
+      await LocalStorage.saveUser(userId, {
+        'id': userId,
+        'groups': groups,
+      });
+    }
+
+    return {'groupNames': groupNames, 'groupCodes': groupCodes};
+  } catch (e) {
+    print('ERROR fetching user groups: $e');
+    return {'groupNames': [], 'groupCodes': []};
+  }
+}
   Future<bool> isDuplicateGroupName(String creatorId, String groupName) async {
     try {
-      // Use a search query instead of filters
       final result = await databases.listDocuments(
         databaseId: DATABASE_ID,
         collectionId: GROUP_COLLECTION_ID,
         queries: [
-          Query.equal('creatorId', creatorId),   // Query to filter by creatorId
-          Query.equal('groupName', groupName),   // Query to filter by groupName
+          Query.equal('creatorId', creatorId),
+          Query.equal('groupName', groupName),
         ],
       );
 
-      return result.total > 0; // If there is any document matching the criteria
+      return result.total > 0;
     } catch (e) {
       print('ERROR checking duplicate group: $e');
       return false;
     }
   }
 
-  // Function to generate a unique 6-letter group code
   Future<String> generateUniqueCode() async {
     const String chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
     Random random = Random();
     String code = List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
     return code;
-  }
-
-  // Function to fetch the groups for the logged-in user
-  Future<Map<String, List<String>>> fetchUserGroups(String userId) async {
-    try {
-      // Check local storage first
-      final prefs = await SharedPreferences.getInstance();
-      List<String> groupNames = [];
-      List<String> groupCodes = [];
-
-      // Fetch from local storage if available
-      if (prefs.containsKey(userId)) {
-        String groupsData = prefs.getString(userId)!;
-        // Extract group names and codes from local data (modify as needed)
-        groupNames = extractGroupNamesFromLocalData(groupsData);
-        groupCodes = extractGroupCodesFromLocalData(groupsData);
-      } else {
-        // Fetch from the database if not found in local storage
-        Document result = await databases.getDocument(
-          databaseId: DATABASE_ID,
-          collectionId: USERS_COLLECTION_ID,
-          documentId: userId,
-        );
-
-        List<dynamic> groups = result.data['groups'] ?? [];
-
-        for (String groupCode in groups) {
-          // Fetch each group document by group code
-          DocumentList groupDoc = await databases.listDocuments(
-            databaseId: DATABASE_ID,
-            collectionId: GROUP_COLLECTION_ID,
-            queries: [
-              Query.equal('groupCode', groupCode),  // Query based on the 'groupCode' field in the document
-            ],
-          );
-
-          groupNames.add(groupDoc.documents.first.data['groupName']);
-          groupCodes.add(groupCode);
-        }
-
-        // Store the fetched groups in local storage
-        await prefs.setString(userId, groupNames.join(', '));  // Example, modify accordingly
-      }
-
-      return {'groupNames': groupNames, 'groupCodes': groupCodes};
-    } catch (e) {
-      print('ERROR fetching user groups: $e');
-      return {'groupNames': [], 'groupCodes': []};
-    }
-  }
-
-  // Helper functions for extracting data from local storage strings (modify based on format)
-  List<String> extractGroupNamesFromLocalData(String data) {
-    return data.split(',').toList();
-  }
-
-  List<String> extractGroupCodesFromLocalData(String data) {
-    return data.split(',').toList(); // Update logic as necessary
   }
 }

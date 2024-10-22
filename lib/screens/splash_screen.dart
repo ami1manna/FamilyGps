@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:familygps/storage/localstorage.dart';
 import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
 
@@ -13,14 +14,22 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    _refreshGroupDataAndNavigate();
+  }
 
-   
-
-    Timer(const Duration(seconds: 3), () {
-      // Navigate to home screen after 3 seconds
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const CheckSession()));
-    });
+  Future<void> _refreshGroupDataAndNavigate() async {
+    try {
+      await LocalStorage.refreshLocalStorageFromDatabase();
+      // Only navigate after the refresh is complete
+      if (mounted) {  // Check if the widget is still in the tree
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const CheckSession())
+        );
+      }
+    } catch (e) {
+      print("Error during refresh: $e");
+      // Handle error (e.g., show error message, retry option)
+    }
   }
 
   @override
