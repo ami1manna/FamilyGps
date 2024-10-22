@@ -1,5 +1,5 @@
 import 'package:familygps/controllers/group_detail_operation.dart';
-import 'package:familygps/widgets/Toast.dart';
+import 'package:familygps/widgets/Toast.dart'; // Custom Toast file
 import 'package:flutter/material.dart';
 
 class GroupDetailScreen extends StatefulWidget {
@@ -11,7 +11,7 @@ class GroupDetailScreen extends StatefulWidget {
 
 class _GroupDetailScreenState extends State<GroupDetailScreen> {
   final TextEditingController _memberController = TextEditingController();
-  List<Map<String, String>> _members = [];  // Updated to store user details (name and email)
+  List<Map<String, String>> _members = [];  // To store user details (name and email)
   bool _isLoading = false;
   String _groupName = "Loading...";
   late String groupCode;
@@ -31,7 +31,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       _isLoading = true;
     });
     try {
-      List<Map<String, String>> members = await _groupOperation.fetchGroupMembers(groupCode);  // Updated return type
+      List<Map<String, String>> members = await _groupOperation.fetchGroupMembers(groupCode);
       String groupName = await _groupOperation.fetchGroupNameByCode(groupCode);
 
       setState(() {
@@ -50,7 +50,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   Future<void> _addMember() async {
     String newMember = _memberController.text.trim();
     if (newMember.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please enter a valid user ID')));
+      Toast.show(context, 'Please enter a valid user ID', ToastType.error);
       return;
     }
 
@@ -63,8 +63,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       if (result == 'User added successfully') {
         _fetchGroupDetails();
         _memberController.clear();
+        Toast.show(context, result, ToastType.success);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+        Toast.show(context, result, ToastType.error);
       }
     } catch (e) {
       print('Error adding member: $e');
@@ -139,8 +140,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   child: TextField(
                     controller: _memberController,
                     decoration: InputDecoration(
-                      labelText: 'Enter User ID to Add',
-                      hintText: 'e.g., user123',
+                      labelText: 'Enter Email ID to Add',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -167,11 +167,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                 leading: const Icon(Icons.person, color: Colors.purple),
                                 title: Text(
                                   _members[index]['name'] ?? 'Unknown',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: Text(
                                   _members[index]['email'] ?? 'Unknown',
-                                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                                 ),
                                 trailing: IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),

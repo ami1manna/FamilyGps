@@ -68,9 +68,20 @@ Future<List<Map<String, String>>> fetchGroupMembers(String groupCode) async {
 }
 
 
-  // Add a user to a group
-  Future<String> addUserToGroup(String groupCode, String userId) async {
-    try {
+// Add a user to a group by their email and also add the group code to the user's groups list
+Future<String> addUserToGroup(String groupCode, String email) async {
+  try {
+    // Fetch the user's document by their email
+    DocumentList userDoc = await _databases.listDocuments(
+      databaseId: DATABASE_ID,
+      collectionId: USERS_COLLECTION_ID,
+      queries: [Query.equal('email', email)],
+    );
+
+    if (userDoc.total > 0) {
+      // Get the user's ID from the document
+      String userId = userDoc.documents[0].$id;
+
       // Fetch the group document by group code
       DocumentList groupDoc = await _databases.listDocuments(
         databaseId: DATABASE_ID,
@@ -84,28 +95,46 @@ Future<List<Map<String, String>>> fetchGroupMembers(String groupCode) async {
         if (!members.contains(userId)) {
           members.add(userId);
 
-          // Update the group with new member
+          // Update the group with the new member
           await _databases.updateDocument(
             databaseId: DATABASE_ID,
             collectionId: GROUP_COLLECTION_ID,
             documentId: groupDoc.documents[0].$id,
             data: {'members': members},
           );
+
+          // Add the group code to the user's groups list
+          List<dynamic> userGroups = userDoc.documents[0].data['groups'] ?? [];
+          if (!userGroups.contains(groupCode)) {
+            userGroups.add(groupCode);
+
+            // Update the user's document with the updated groups list
+            await _databases.updateDocument(
+              databaseId: DATABASE_ID,
+              collectionId: USERS_COLLECTION_ID,
+              documentId: userId,
+              data: {'groups': userGroups},
+            );
+          }
+
           return 'User added successfully';
         } else {
-          return 'User is already a member';
+          return 'User is already a member of the group';
         }
       } else {
         return 'Group not found';
       }
-    } catch (e) {
-      print('Error adding user to group: $e');
-      return 'Failed to add user';
+    } else {
+      return 'User not found with the provided email';
     }
+  } catch (e) {
+    print('Error adding user to group: $e');
+    return 'Failed to add user';
   }
+}
 
-  // Delete a user from a group
   // Delete a user from a group and also remove the group code from the user's document
+// Delete a user from a group and also remove the group code from the user's document
 Future<String> deleteUserFromGroup(String groupCode, String userId) async {
   try {
     // Fetch the group document by group code
@@ -145,16 +174,18 @@ Future<String> deleteUserFromGroup(String groupCode, String userId) async {
         // Get the user's current list of groups
         List<dynamic> userGroups = userDoc.data['groups'] ?? [];
 
-        // Remove the group code from the user's groups list
-        userGroups.remove(groupCode);
+        // Remove the group code from the user's groups list if it exists
+        if (userGroups.contains(groupCode)) {
+          userGroups.remove(groupCode);
 
-        // Update the user's document with the modified groups list
-        await _databases.updateDocument(
-          databaseId: DATABASE_ID,
-          collectionId: USERS_COLLECTION_ID,
-          documentId: userId,
-          data: {'groups': userGroups},
-        );
+          // Update the user's document with the modified groups list
+          await _databases.updateDocument(
+            databaseId: DATABASE_ID,
+            collectionId: USERS_COLLECTION_ID,
+            documentId: userId,
+            data: {'groups': userGroups},
+          );
+        }
 
         return 'User deleted successfully';
       } else {
