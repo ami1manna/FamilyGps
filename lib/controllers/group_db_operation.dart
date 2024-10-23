@@ -14,7 +14,7 @@ class GroupDbOperation {
         .setSelfSigned();
     databases = Databases(client);
   }
-
+  
   // Function to generate a unique 8-character alphanumeric group code
   Future<String> generateUniqueCode() async {
     const chars = '0123456789';
