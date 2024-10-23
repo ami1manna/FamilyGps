@@ -1,4 +1,5 @@
 import 'package:familygps/widgets/google_map.dart';
+import 'package:familygps/widgets/home_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 
 class MapScreen extends StatefulWidget {
@@ -10,19 +11,18 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   @override
-  void initState()  {
+  void initState() {
     super.initState();
-    
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        child: GoogleMapWidget(),
-       
+      body: Stack(
+        children: [
+          GoogleMapWidget(), // Custom Google Map widget
+          HomeDraggableBottomSheet(), // Draggable bottom sheet
+        ],
       ),
     );
   }

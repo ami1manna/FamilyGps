@@ -1,17 +1,22 @@
 import 'package:familygps/controllers/group_detail_operation.dart';
+import 'package:familygps/providers/name_email_provider.dart';
 import 'package:familygps/widgets/Toast.dart'; // Custom Toast file
+import 'package:familygps/widgets/search_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GroupDetailScreen extends StatefulWidget {
+
+class GroupDetailScreen extends ConsumerStatefulWidget {
   const GroupDetailScreen({super.key});
 
   @override
-  State<GroupDetailScreen> createState() => _GroupDetailScreenState();
+  ConsumerState<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
-class _GroupDetailScreenState extends State<GroupDetailScreen> {
+class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   final TextEditingController _memberController = TextEditingController();
-  List<Map<String, String>> _members = [];  // To store user details (name and email)
+  List<Map<String, String>> _members =
+      []; // To store user details (name and email)
   bool _isLoading = false;
   String _groupName = "Loading...";
   late String groupCode;
@@ -31,7 +36,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
       _isLoading = true;
     });
     try {
-      List<Map<String, String>> members = await _groupOperation.fetchGroupMembers(groupCode);
+      List<Map<String, String>> members =
+          await _groupOperation.fetchGroupMembers(groupCode);
       String groupName = await _groupOperation.fetchGroupNameByCode(groupCode);
 
       setState(() {
@@ -59,7 +65,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         _isLoading = true;
       });
 
-      String result = await _groupOperation.addUserToGroup(groupCode, newMember);
+      String result =
+          await _groupOperation.addUserToGroup(groupCode, newMember);
       if (result == 'User added successfully') {
         _fetchGroupDetails();
         _memberController.clear();
@@ -82,7 +89,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
         _isLoading = true;
       });
 
-      String result = await _groupOperation.deleteUserFromGroup(groupCode, userId);
+      String result =
+          await _groupOperation.deleteUserFromGroup(groupCode, userId);
       if (result == 'User deleted successfully') {
         Toast.show(context, result, ToastType.success);
         _fetchGroupDetails();
@@ -106,7 +114,8 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
 
       String result = await _groupOperation.deleteGroup(groupCode);
       if (result == 'Group deleted successfully') {
-        Navigator.pop(context, true); // Pass true to indicate the group was deleted
+        Navigator.pop(
+            context, true); // Pass true to indicate the group was deleted
         Toast.show(context, result, ToastType.success);
       } else {
         Toast.show(context, result, ToastType.error);
@@ -153,6 +162,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                     ),
                   ),
                 ),
+                
                 const SizedBox(height: 10),
                 Expanded(
                   child: _members.isEmpty
@@ -161,21 +171,29 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                           itemCount: _members.length,
                           itemBuilder: (context, index) {
                             return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+                              margin: const EdgeInsets.symmetric(
+                                  vertical: 5, horizontal: 10),
                               child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                leading: const Icon(Icons.person, color: Colors.purple),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                                leading: const Icon(Icons.person,
+                                    color: Colors.purple),
                                 title: Text(
                                   _members[index]['name'] ?? 'Unknown',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: Text(
                                   _members[index]['email'] ?? 'Unknown',
-                                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                  style: const TextStyle(
+                                      fontSize: 14, color: Colors.grey),
                                 ),
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () => _deleteUser(_members[index]['userId']!),
+                                  icon: const Icon(Icons.delete,
+                                      color: Colors.red),
+                                  onPressed: () =>
+                                      _deleteUser(_members[index]['userId']!),
                                 ),
                               ),
                             );

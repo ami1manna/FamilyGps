@@ -1,25 +1,33 @@
 import 'dart:async';
+import 'package:familygps/providers/name_email_provider.dart';
 import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SplashScreen extends StatefulWidget {
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
 
-   
-
-    Timer(const Duration(seconds: 3), () {
-      // Navigate to home screen after 3 seconds
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const CheckSession()));
+    // Call the function to set the users list from the provider
+    ref.read(nameEmailProvider.notifier).setUsersList().then((_) {
+      // After fetching the users, navigate to the CheckSession screen
+      Timer(const Duration(seconds: 3), () {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const CheckSession()),
+        );
+      });
+    }).catchError((error) {
+      // Handle errors if any
+      print('Error fetching user data: $error');
     });
   }
 
