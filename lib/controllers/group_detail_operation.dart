@@ -14,9 +14,31 @@ class DetailGroupOperation {
     _databases = Databases(client);
   }
 
-  // Fetch all members of a group
-// Fetch all members of a group, displaying their names instead of userId
-// Fetch all members of a group, displaying their names and emails
+// group userif only 
+Future<List<String>> fetchGroupMemberIds(String groupCode) async {
+  try {
+    // Fetch group details by group code
+    DocumentList groupDoc = await _databases.listDocuments(
+      databaseId: DATABASE_ID,
+      collectionId: GROUP_COLLECTION_ID,
+      queries: [Query.equal('groupCode', groupCode)],
+    );
+
+    if (groupDoc.total > 0) {
+      // Extract the 'members' field from the group document
+      List<String> memberIds = List<String>.from(groupDoc.documents[0].data['members'] ?? []);
+      return memberIds; // Return the list of user IDs
+    }
+
+    return []; // Return an empty list if no group found or no members
+  } catch (e) {
+    print('Error fetching group member IDs: $e');
+    return [];
+  }
+}
+
+
+// groups members email , name , userid
 Future<List<Map<String, String>>> fetchGroupMembers(String groupCode) async {
   try {
     // Fetch group details by group code

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:appwrite/appwrite.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 import 'package:familygps/utils/store_data.dart';
+import 'package:familygps/widgets/custom_marker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -58,7 +59,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
 
         if (lat != null && long != null) {
           print('Updating marker with new position: $lat, $long');
-          _updateMarker(documentId, LatLng(lat, long));
+          _updateMarker(documentId, LatLng(lat, long),'AM');
         } else {
           print('No valid location data found for document $documentId');
         }
@@ -104,7 +105,7 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
       double? long = double.tryParse(document.data['long'].toString());
 
       if (lat != null && long != null) {
-        _updateMarker(userId, LatLng(lat, long));
+        _updateMarker(userId, LatLng(lat, long),'AM');
       } else {
         print('No valid location data found for user $userId');
       }
@@ -114,24 +115,26 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
     }
   }
 
-  /// Updates the marker with the given [id] to the specified [position] on the
-  /// map, and smoothly moves the camera to the updated marker with a zoom level
-  /// of 15.
-  void _updateMarker(String id, LatLng position) {
-    print('Updating marker $id to position: $position');
-    setState(() {
-      _markers[id] = Marker(
-        markerId: MarkerId(id),
-        position: position,
-        infoWindow: InfoWindow(title: 'User $id'),
-      );
-    });
+ Future<void> _updateMarker(String id, LatLng position, String initials) async {
+  print('Updating marker $id to position: $position');
+  
+  // Generate the custom marker
+  BitmapDescriptor markerIcon = await createCustomMarker(initials);
 
-    // Smoothly move camera to the updated marker with a zoom level of 15
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngZoom(position, 15.0),
+  setState(() {
+    _markers[id] = Marker(
+      markerId: MarkerId(id),
+      position: position,
+      icon: markerIcon, // Use the custom marker icon
+      infoWindow: InfoWindow(title: 'User  $id'),
     );
-  }
+  });
+
+  // Smoothly move camera to the updated marker with a zoom level of 15
+  _mapController?.animateCamera(
+    CameraUpdate.newLatLngZoom(position, 15.0),
+  );
+}
 
   void _onMapCreated(GoogleMapController controller) {
     _mapController = controller;
@@ -160,7 +163,8 @@ class _GoogleMapWidgetState extends State<GoogleMapWidget> {
               markers: Set<Marker>.of(_markers.values),
               mapType: MapType.normal,
               myLocationEnabled: true,
-              zoomControlsEnabled: true,
+              zoomControlsEnabled: false,
+
             ),
     );
   }
