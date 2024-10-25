@@ -1,8 +1,9 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:familygps/models/users_locations.dart';
 
-// Method to create a custom marker
+/// Method to create a custom marker with user initials
 Future<BitmapDescriptor> createCustomMarker(String initials) async {
   // Create a picture recorder
   final recorder = ui.PictureRecorder();
@@ -20,7 +21,7 @@ Future<BitmapDescriptor> createCustomMarker(String initials) async {
   final textPainter = TextPainter(
     text: TextSpan(
       text: initials,
-      style: TextStyle(
+      style: const TextStyle(
         color: Colors.white,
         fontSize: 40,
         fontWeight: FontWeight.bold,
@@ -44,4 +45,40 @@ Future<BitmapDescriptor> createCustomMarker(String initials) async {
 
   // Create a BitmapDescriptor from the image
   return BitmapDescriptor.fromBytes(pngBytes);
+}
+
+/// Function to generate markers with custom icons for each location
+Future<Set<Marker>> generateMarkers(List<UserLocation> locations) async {
+  final Set<Marker> markers = {};
+  
+  for (var location in locations) {
+    // Extract initials from the name
+    String initials = _getInitials(location.name);
+
+    // Create the custom marker icon with initials
+    BitmapDescriptor customIcon = await createCustomMarker(initials);
+
+    // Add the marker with the custom icon
+    markers.add(
+      Marker(
+        markerId: MarkerId(location.userId),
+        position: LatLng(location.latitude, location.longitude),
+        infoWindow: InfoWindow(title: location.name),
+        icon: customIcon, // Set the custom icon here
+      ),
+    );
+  }
+
+  return markers;
+}
+
+/// Helper function to get the initials from the user's name
+String _getInitials(String name) {
+  List<String> words = name.split(' ');
+  if (words.length >= 2) {
+    return '${words[0][0]}${words[1][0]}'; // First letter of first and last name
+  } else if (words.isNotEmpty) {
+    return words[0][0].toUpperCase(); // If only one name part, take first letter
+  }
+  return ''; // Return empty string if no valid name
 }

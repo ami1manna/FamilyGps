@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomeDraggableBottomSheet extends ConsumerStatefulWidget {
+  const HomeDraggableBottomSheet({super.key});
+
   @override
   ConsumerState<HomeDraggableBottomSheet> createState() => _HomeDraggableBottomSheetState();
 }
@@ -48,7 +50,7 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.05,
+      initialChildSize: 0.15,
       minChildSize: 0.05,
       maxChildSize: 0.8,
       builder: (context, scrollController) {
@@ -76,9 +78,7 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: isLoading 
-                  ? const Center(child: CircularProgressIndicator()) // Loading indicator
-                  : ListView.builder(
+              child:  ListView.builder(
                       controller: scrollController,
                       padding: const EdgeInsets.all(16.0).copyWith(top: 12),
                       itemCount: userGroups.length, // Set the number of items

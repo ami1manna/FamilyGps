@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 
 class UsersSearchBar extends ConsumerStatefulWidget {
+  const UsersSearchBar({super.key});
+
   @override
   ConsumerState<UsersSearchBar> createState() => _SearchBarState();
 }
@@ -24,7 +26,7 @@ class _SearchBarState extends ConsumerState<UsersSearchBar> {
     final usersList = ref.watch(nameEmailProvider);
 
     // Filter the user list based on the search query
-    List<String> _filterUsers() {
+    List<String> filterUsers() {
       if (searchText.isEmpty) {
         return usersList;
       } else {
@@ -52,9 +54,9 @@ class _SearchBarState extends ConsumerState<UsersSearchBar> {
         SizedBox(height: 10),
         Expanded(
           child: ListView.builder(
-            itemCount: _filterUsers().length,
+            itemCount: filterUsers().length,
             itemBuilder: (context, index) {
-              final user = _filterUsers()[index];
+              final user = filterUsers()[index];
               return ListTile(
                 title: Text(user),
               );

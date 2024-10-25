@@ -1,171 +1,101 @@
 import 'dart:async';
-
-import 'package:appwrite/appwrite.dart';
-import 'package:familygps/constants/appwrite_config.dart';
-import 'package:familygps/utils/store_data.dart';
+import 'package:familygps/models/users_locations.dart';
+import 'package:familygps/providers/locations_provider.dart';
+import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/custom_marker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class GoogleMapWidget extends StatefulWidget {
+class GoogleMapWidget extends ConsumerStatefulWidget {
   const GoogleMapWidget({super.key});
 
   @override
   _GoogleMapWidgetState createState() => _GoogleMapWidgetState();
 }
 
-class _GoogleMapWidgetState extends State<GoogleMapWidget> {
+class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   GoogleMapController? _mapController;
-  final LatLng _initialPosition = const LatLng(37.7749, -122.4194);
-  final Map<String, Marker> _markers = {};
-  StreamSubscription<RealtimeMessage>? _subscription;
-  final Client client = Client();
-  late final Realtime realtime;
-  bool _isLoading = true;
-   late final Databases databases;
+  final LatLng _initialPosition =
+      const LatLng(37.7749, -122.4194); // San Francisco
+  Set<Marker> _markers = {};
 
   @override
   void initState() {
     super.initState();
-    _initializeAppwrite();
-    _subscribeToLocationUpdates();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateMarkers(ref.read(userLocationProvider));
+    });
   }
 
   @override
   void dispose() {
-    _subscription?.cancel();
     _mapController?.dispose();
     super.dispose();
   }
 
-  void _initializeAppwrite() {
-    client
-        .setEndpoint(END_POINT)
-        .setProject(PROJECT_ID)
-        .setSelfSigned(status: true);
-    realtime = Realtime(client);
-    databases = Databases(client);
-  }
+  Future<void> _updateMarkers(List<UserLocation> locations) async {
+    final markers = await generateMarkers(locations);
+    setState(() {
+      _markers = markers;
+    });
 
-  void listenToDocumentChanges(String databaseId, String collectionId, String documentId) {
-    final channel = 'databases.$databaseId.collections.$collectionId.documents.$documentId';
-    print("Subscribing to document changes at $channel");
-
-    _subscription = realtime.subscribe([channel]).stream.listen(
-      (response) {
-        print('Received realtime update: ${response.payload}');
-        double? lat = double.tryParse(response.payload['lat'].toString());
-        double? long = double.tryParse(response.payload['long'].toString());
-
-        if (lat != null && long != null) {
-          print('Updating marker with new position: $lat, $long');
-          _updateMarker(documentId, LatLng(lat, long),'AM');
-        } else {
-          print('No valid location data found for document $documentId');
-        }
-      },
-      onError: (error) {
-        print('Error occurred during real-time subscription: $error');
-        _showErrorSnackBar('Failed to get location updates');
-      },
-    );
-  }
-
-  void _subscribeToLocationUpdates() async {
-    try {
-      String userId = await LocationServiceRepository.getUserId() as String;
-      print("User ID: $userId");
-
-      if (userId.isNotEmpty) {
-        listenToDocumentChanges(DATABASE_ID, USERS_COLLECTION_ID, userId);
-        await _fetchInitialLocation(userId);
-      } else {
-        print('User ID is empty or null');
-        _showErrorSnackBar('Failed to get user information');
-      }
-    } catch (e) {
-      print('Error setting up location updates: $e');
-      _showErrorSnackBar('Failed to set up location tracking');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-     }
-  }
-
-  Future<void> _fetchInitialLocation(String userId) async {
-    try {
-      
-      final document = await databases.getDocument(
-        databaseId: DATABASE_ID,
-        collectionId: USERS_COLLECTION_ID,
-        documentId: userId,
+    if (_mapController != null && locations.isNotEmpty) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLng(
+          LatLng(locations.first.latitude, locations.first.longitude),
+        ),
       );
-      double? lat = double.tryParse(document.data['lat'].toString());
-      double? long = double.tryParse(document.data['long'].toString());
-
-      if (lat != null && long != null) {
-        _updateMarker(userId, LatLng(lat, long),'AM');
-      } else {
-        print('No valid location data found for user $userId');
-      }
-    } catch (e) {
-      print('Error fetching initial location: $e');
-      _showErrorSnackBar('Failed to fetch initial location');
     }
-  }
-
- Future<void> _updateMarker(String id, LatLng position, String initials) async {
-  print('Updating marker $id to position: $position');
-  
-  // Generate the custom marker
-  BitmapDescriptor markerIcon = await createCustomMarker(initials);
-
-  setState(() {
-    _markers[id] = Marker(
-      markerId: MarkerId(id),
-      position: position,
-      icon: markerIcon, // Use the custom marker icon
-      infoWindow: InfoWindow(title: 'User  $id'),
-    );
-  });
-
-  // Smoothly move camera to the updated marker with a zoom level of 15
-  _mapController?.animateCamera(
-    CameraUpdate.newLatLngZoom(position, 15.0),
-  );
-}
-
-  void _onMapCreated(GoogleMapController controller) {
-    _mapController = controller;
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : GoogleMap(
-              onMapCreated: _onMapCreated,
-              initialCameraPosition: CameraPosition(
-                target: _initialPosition,
-                zoom: 10.0,
-              ),
-              markers: Set<Marker>.of(_markers.values),
-              mapType: MapType.normal,
-              myLocationEnabled: true,
-              zoomControlsEnabled: false,
-
+      body: Stack(
+        children: [
+          GoogleMap(
+            onMapCreated: (GoogleMapController controller) {
+              _mapController = controller;
+              controller.moveCamera(
+                CameraUpdate.newLatLngZoom(_initialPosition, 10.0),
+              );
+            },
+            initialCameraPosition: CameraPosition(
+              target: _initialPosition,
+              zoom: 10.0,
             ),
+            markers: _markers,
+            mapType: MapType.normal,
+            myLocationEnabled: true,
+            zoomControlsEnabled: false,
+            tiltGesturesEnabled: true,
+            trafficEnabled: true,
+          ),
+          Positioned(
+            top: 10,
+            right: 10,
+            child: _buildLocationUpdateListener(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationUpdateListener() {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.listen<List<UserLocation>>(
+          userLocationProvider,
+          (previous, next) {
+            if (next != previous) {
+              _updateMarkers(next);
+            }
+          },
+        );
+        return const SizedBox
+            .shrink(); // This widget doesn't render anything visible
+      },
     );
   }
 }

@@ -24,7 +24,7 @@ class UserLocationService {
 
     // Subscribe to real-time changes for the specified user IDs
     final subscription = _realtime.subscribe([
-      'databases.${DATABASE_ID}.collections.${USERS_COLLECTION_ID}.documents'
+      'databases.$DATABASE_ID.collections.$USERS_COLLECTION_ID.documents'
     ]);
 
     subscription.stream.listen((RealtimeMessage message) async {
