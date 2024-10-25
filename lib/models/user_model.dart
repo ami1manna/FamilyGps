@@ -3,7 +3,7 @@ class UserModel {
   final String name;
   final String email;
   final String? password;
-  final bool? loggedIn;
+  
  
   double? lat;
   double? long;
@@ -13,7 +13,7 @@ class UserModel {
     required this.email,
     this.password,
     this.userid,
-    this.loggedIn,
+    
     this.lat,
     this.long,
   });

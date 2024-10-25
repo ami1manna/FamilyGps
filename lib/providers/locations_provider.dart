@@ -85,7 +85,7 @@ Future<void> fetchUserLocations(List<String> userIds) async {
   List<UserLocation> initialLocations = [];
 
   for (String userId in userIds) {
-    try {
+    try { 
       // Fetch the user's document by their userId
       Document userDoc = await _databases.getDocument(
         databaseId: databaseId,

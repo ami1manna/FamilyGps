@@ -25,7 +25,7 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
 
   Future<void> _fetchUserGroups() async {
     setState(() {
-      isLoading = true; // Show loading indicator
+      isLoading = true;
     });
 
     final user = ref.read(userProvider);
@@ -41,7 +41,7 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
         // Handle error (e.g., show a snackbar)
       } finally {
         setState(() {
-          isLoading = false; // Hide loading indicator
+          isLoading = false;
         });
       }
     }
@@ -50,59 +50,98 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.15,
-      minChildSize: 0.05,
+      initialChildSize: 0.1,
+      minChildSize: 0.1,
       maxChildSize: 0.8,
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: const Color.fromARGB(255, 236, 224, 252),
+            color: Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10.0,
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 5,
+                blurRadius: 7,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
-          child: Column(children: [
-            Center(
-              child: Container(
-                width: double.infinity,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(166, 180, 176, 185),
-                  borderRadius: BorderRadius.circular(10),
+          child: SingleChildScrollView(
+            controller: scrollController,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 16),
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-              ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Your Groups',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: userGroups.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            elevation: 2,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.primaries[index % Colors.primaries.length],
+                                child: Text(
+                                  userGroups[index][0].toUpperCase(),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              title: Text(
+                                userGroups[index],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                              onTap: () async {
+                                String selectedGroupCode = groupCode[index];
+                                try {
+                                  List<String> memberIds = await DetailGroupOperation().fetchGroupMemberIds(selectedGroupCode);
+                                  await ref.read(userLocationProvider.notifier).fetchUserLocations(memberIds);
+                                } catch (e) {
+                                  print('Error fetching group member IDs: $e');
+                                  // Handle error (e.g., show a snackbar)
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child:  ListView.builder(
-                      controller: scrollController,
-                      padding: const EdgeInsets.all(16.0).copyWith(top: 12),
-                      itemCount: userGroups.length, // Set the number of items
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          leading: const Icon(Icons.group),
-                          title: Text(userGroups[index]),
-                          onTap: () async {
-                            String selectedGroupCode = groupCode[index];
-                            try {
-                              List<String> memberIds = await DetailGroupOperation().fetchGroupMemberIds(selectedGroupCode);
-                              
-                              // Fetch location data
-                              await ref.read(userLocationProvider.notifier).fetchUserLocations(memberIds);
-                            } catch (e) {
-                              print('Error fetching group member IDs: $e');
-                              // Handle error (e.g., show a snackbar)
-                            }
-                          },     
-                        );
-                      },
-                    ),
-            ),
-          ]),
+          ),
         );
       },
     );

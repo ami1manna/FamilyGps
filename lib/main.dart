@@ -43,6 +43,13 @@ class MyApp extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 15),
           ),
         ),
+         textTheme: const TextTheme(
+          titleLarge: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.15,
+          ),
+        ),
 
         useMaterial3: true,
       ),
