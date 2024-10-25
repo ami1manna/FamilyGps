@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:familygps/models/users_locations.dart';
 
-/// Method to create a custom marker with user initials
+/// Method to create a custom marker with user initials and color based on the first letter
 Future<BitmapDescriptor> createCustomMarker(String initials) async {
   // Create a picture recorder
   final recorder = ui.PictureRecorder();
@@ -13,8 +13,11 @@ Future<BitmapDescriptor> createCustomMarker(String initials) async {
   const double width = 100;
   const double height = 100;
 
+  // Get color based on the first letter of the initials
+  final color = _getColorFromInitial(initials.isNotEmpty ? initials[0] : 'A');
+
   // Draw a circular background
-  final paint = Paint()..color = Colors.blue;
+  final paint = Paint()..color = color;
   canvas.drawCircle(Offset(width / 2, height / 2), width / 2, paint);
 
   // Draw the initials
@@ -45,6 +48,45 @@ Future<BitmapDescriptor> createCustomMarker(String initials) async {
 
   // Create a BitmapDescriptor from the image
   return BitmapDescriptor.fromBytes(pngBytes);
+}
+
+/// Helper function to get a color based on the initial letter
+Color _getColorFromInitial(String initial) {
+  final colors = [
+    Colors.red,
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.pink,
+    Colors.indigo,
+    Colors.cyan,
+    Colors.brown,
+    Colors.amber,
+    Colors.deepOrange,
+    Colors.deepPurple,
+    Colors.lightBlue,
+    Colors.lightGreen,
+    Colors.lime,
+    Colors.yellow,
+    Colors.blueGrey,
+    Colors.grey,
+    Colors.indigoAccent,
+    Colors.cyanAccent,
+    Colors.greenAccent,
+    Colors.pinkAccent,
+    Colors.redAccent,
+    Colors.yellowAccent,
+    Colors.purpleAccent,
+  ];
+  // Convert the initial to uppercase and get its ASCII value
+  int asciiValue = initial.toUpperCase().codeUnitAt(0);
+  
+  // Use modulo to get an index within the range of our colors array
+  int colorIndex = asciiValue % colors.length;
+  
+  return colors[colorIndex];
 }
 
 /// Function to generate markers with custom icons for each location

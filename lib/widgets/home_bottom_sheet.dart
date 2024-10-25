@@ -51,7 +51,7 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.15,
-      minChildSize: 0.05,
+      minChildSize: 0.15,
       maxChildSize: 0.8,
       builder: (context, scrollController) {
         return Container(
