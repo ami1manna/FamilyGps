@@ -47,7 +47,7 @@ void _signUp(BuildContext ctx) {
 
         if (loginResult == 'success') {
           Toast.show(ctx, "Signup and login successful!", ToastType.success);
-          Navigator.pushReplacementNamed(ctx, '/home');
+          Navigator.pushReplacementNamed(ctx, '/permissions');
         } else {
           Toast.show(ctx, loginResult, ToastType.error);
         }

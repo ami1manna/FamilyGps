@@ -2,6 +2,7 @@ import 'package:appwrite/models.dart';
 import 'package:familygps/controllers/auth.dart';
 import 'package:familygps/models/user_model.dart';
 import 'package:familygps/providers/user_provider.dart';
+import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_screen.dart';
 import 'package:familygps/screens/map_screen.dart';
 import 'package:familygps/utils/sensors.dart';
@@ -24,8 +25,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final List<Widget> _pages = [
     const MapScreen(),
     const GroupScreen(),
-    const MapScreen(),
-    const MapScreen(),
+    const ActivityScreen(),
+    const ActivityScreen(),
   ];
 
   bool isLoading = true;

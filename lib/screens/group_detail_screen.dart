@@ -1,7 +1,5 @@
 import 'package:familygps/controllers/group_detail_operation.dart';
-import 'package:familygps/providers/name_email_provider.dart';
 import 'package:familygps/widgets/Toast.dart'; // Custom Toast file
-import 'package:familygps/widgets/search_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

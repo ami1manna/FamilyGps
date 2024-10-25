@@ -1,3 +1,4 @@
+import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_detail_screen.dart';
 import 'package:familygps/screens/home_screen.dart';
 import 'package:familygps/screens/login_screen.dart';
@@ -8,9 +9,7 @@ import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 void main() {
- 
   runApp(ProviderScope(
     // Wraps your app with ProviderScope
     child: MyApp(),
@@ -53,8 +52,9 @@ class MyApp extends StatelessWidget {
         '/home': (context) => HomeScreen(),
         '/signup': (context) => const SignupScreen(),
         '/login': (context) => LoginScreen(),
-        '/permissions':(context) => const PermissionRequestScreen(),
-         '/groupDetail': (context) => GroupDetailScreen(),
+        '/permissions': (context) => const PermissionRequestScreen(),
+        '/groupDetail': (context) => GroupDetailScreen(),
+        '/activity': (context) => ActivityScreen(),
       },
     );
   }
