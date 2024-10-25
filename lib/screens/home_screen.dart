@@ -5,6 +5,7 @@ import 'package:familygps/providers/user_provider.dart';
 import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_screen.dart';
 import 'package:familygps/screens/map_screen.dart';
+import 'package:familygps/screens/profile_screen.dart';
 import 'package:familygps/utils/sensors.dart';
 import 'package:familygps/utils/store_data.dart';
 import 'package:familygps/widgets/Toast.dart';
@@ -26,7 +27,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const MapScreen(),
     const GroupScreen(),
     const ActivityScreen(),
-    const ActivityScreen(),
+    const ProfileScreen(),
   ];
 
   bool isLoading = true;

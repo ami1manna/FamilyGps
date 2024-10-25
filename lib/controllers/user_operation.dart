@@ -13,6 +13,27 @@ class UsersDatabaseOperations {
         .setSelfSigned();
     databases = Databases(client);
   }
+
+  Future<void> updateUserInDatabase(
+    String userId, Map<String, dynamic> updatedData) async {
+  const databaseId = DATABASE_ID; // Replace with your actual database ID
+  const collectionId = USERS_COLLECTION_ID; // Replace with your actual collection ID
+
+  try {
+    print('Attempting to update user with ID: $userId');
+    await databases.updateDocument(
+      databaseId: databaseId,
+      collectionId: collectionId,
+      documentId: userId,
+      data: updatedData,
+    );
+    print('User updated successfully.');
+  } on AppwriteException catch (e) {
+    print('Error updating user in database: ${e.code} - ${e.message}');
+  } catch (e) {
+    print('Unexpected error: $e');
+  }
+}
   // Function to create a new user
   Future<void> addUserToDatabase(
       String userId, String name, String email, String password) async {
