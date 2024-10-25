@@ -58,7 +58,7 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
               controller.moveCamera(
-                CameraUpdate.newLatLngZoom(_initialPosition, 10.0),
+                CameraUpdate.newLatLng(_initialPosition),
               );
             },
             initialCameraPosition: CameraPosition(

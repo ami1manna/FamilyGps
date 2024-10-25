@@ -3,30 +3,41 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:familygps/models/users_locations.dart';
 
-/// Method to create a custom marker with user initials and color based on the first letter
 Future<BitmapDescriptor> createCustomMarker(String initials) async {
-  // Create a picture recorder
   final recorder = ui.PictureRecorder();
   final canvas = Canvas(recorder);
 
-  // Define the size of the marker
   const double width = 100;
-  const double height = 100;
+  const double height = 120;
+  const double circleRadius = 30;
+  const double pinHeight = height - circleRadius;
 
   // Get color based on the first letter of the initials
   final color = _getColorFromInitial(initials.isNotEmpty ? initials[0] : 'A');
 
-  // Draw a circular background
+  // Draw pin shape
   final paint = Paint()..color = color;
-  canvas.drawCircle(Offset(width / 2, height / 2), width / 2, paint);
+  final path = Path()
+    ..moveTo(width / 2, height)
+    ..quadraticBezierTo(0, height - pinHeight / 2, 0, height - pinHeight)
+    ..quadraticBezierTo(0, circleRadius, width / 2, circleRadius)
+    ..quadraticBezierTo(width, circleRadius, width, height - pinHeight)
+    ..quadraticBezierTo(width, height - pinHeight / 2, width / 2, height)
+    ..close();
+  canvas.drawShadow(path, Colors.black.withOpacity(0.3), 6, false);
+  canvas.drawPath(path, paint);
+
+  // Draw circular avatar
+  final avatarPaint = Paint()..color = Colors.white;
+  canvas.drawCircle(Offset(width / 2, circleRadius), circleRadius, avatarPaint);
 
   // Draw the initials
   final textPainter = TextPainter(
     text: TextSpan(
       text: initials,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 40,
+      style: TextStyle(
+        color: color,
+        fontSize: 43, // Adjust font size based on circle radius
         fontWeight: FontWeight.bold,
       ),
     ),
@@ -37,7 +48,10 @@ Future<BitmapDescriptor> createCustomMarker(String initials) async {
   textPainter.layout();
   textPainter.paint(
     canvas,
-    Offset((width - textPainter.width) / 2, (height - textPainter.height) / 2),
+    Offset(
+      (width - textPainter.width) / 2,
+      circleRadius - textPainter.height / 2,
+    ),
   );
 
   // Convert the canvas to an image
@@ -49,6 +63,7 @@ Future<BitmapDescriptor> createCustomMarker(String initials) async {
   // Create a BitmapDescriptor from the image
   return BitmapDescriptor.fromBytes(pngBytes);
 }
+
 
 /// Helper function to get a color based on the initial letter
 Color _getColorFromInitial(String initial) {
