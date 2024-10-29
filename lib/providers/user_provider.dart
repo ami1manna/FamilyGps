@@ -1,6 +1,5 @@
 
 import 'package:familygps/controllers/auth.dart';
-import 'package:familygps/controllers/user_operation.dart';
 import 'package:familygps/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

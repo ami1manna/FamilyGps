@@ -1,5 +1,4 @@
 import 'package:appwrite/appwrite.dart'; // Ensure you're importing Appwrite SDK
-import 'package:appwrite/models.dart';
 import 'package:familygps/constants/appwrite_config.dart';
 
 class UserLocationService {

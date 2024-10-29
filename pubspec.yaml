@@ -49,6 +49,9 @@ dependencies:
   shared_preferences: ^2.3.2
   sensors_plus: ^6.1.0
   google_fonts: ^4.0.0
+  flutter_local_notifications: ^17.2.4
+  workmanager: ^0.5.2
+ 
  
   
   

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:familygps/models/users_locations.dart';
 import 'package:familygps/providers/locations_provider.dart';
-import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/custom_marker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
