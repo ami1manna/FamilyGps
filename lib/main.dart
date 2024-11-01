@@ -5,13 +5,20 @@ import 'package:familygps/screens/login_screen.dart';
 import 'package:familygps/screens/per_req_screen.dart';
 import 'package:familygps/screens/signup_screen.dart';
 import 'package:familygps/screens/splash_screen.dart';
+import 'package:familygps/utils/background_location.dart';
 import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:workmanager/workmanager.dart';
 
-void main() {
+void main() async {
+   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Workmanager with proper configuration
+  await Workmanager().initialize(
+    backLocationCallbackDispatcher,
+    isInDebugMode: true
+  );
   runApp(ProviderScope(
-    // Wraps your app with ProviderScope
     child: MyApp(),
   ));
 }

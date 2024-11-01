@@ -5,7 +5,7 @@ import 'package:familygps/controllers/auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
@@ -200,7 +200,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         const SizedBox(height: 10),
         ElevatedButton(
           onPressed: onUpdate,
-          child: Text('Update $label'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).primaryColor,
             foregroundColor: Colors.white,
@@ -213,6 +212,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          child: Text('Update $label'),
         ),
       ],
     );
@@ -225,7 +225,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           logoutUser();
           Navigator.pushReplacementNamed(context, '/signup');
         },
-        child: const Text('Logout'),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.red.shade600,
           foregroundColor: Colors.white,
@@ -239,6 +238,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        child: const Text('Logout'),
       ),
     );
   }
