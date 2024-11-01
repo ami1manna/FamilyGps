@@ -6,13 +6,12 @@ import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_screen.dart';
 import 'package:familygps/screens/map_screen.dart';
 import 'package:familygps/screens/profile_screen.dart';
-import 'package:familygps/utils/sensors.dart';
+import 'package:familygps/utils/background_location.dart';
 import 'package:familygps/utils/store_data.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/bottom_nav.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,7 +20,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
   int _currentIndex = 0;
   final List<Widget> _pages = [
     const MapScreen(),
@@ -36,7 +35,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _fetchUser();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    LocationService.stopForegroundUpdates();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_currentUser != null) {
+      if (state == AppLifecycleState.paused) {
+        // App is in background
+        LocationService.stopForegroundUpdates();
+        LocationService.startBackgroundUpdates(_currentUser!.$id);
+      } else if (state == AppLifecycleState.resumed) {
+        // App is in foreground
+        LocationService.stopBackgroundUpdates();
+        LocationService.startForegroundUpdates(_currentUser!.$id);
+      }
+    }
   }
 
   Future<void> _fetchUser() async {
@@ -52,8 +74,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // Save user ID to local storage
         print(user.$id);
         await LocationServiceRepository.saveUserId(_currentUser!.$id);
-        await LocationService.startLocationTracking(); // Start location tracking
 
+        // Start foreground location updates
+        LocationService.startForegroundUpdates(_currentUser!.$id);
+        
       } else {
         setState(() {
           isLoading = false;
