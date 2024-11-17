@@ -27,218 +27,148 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   String getInitials(String name) {
-    List<String> names = name.split(" ");
-    String initials = "";
-    if (names.length > 1) {
-      initials = names[0][0] + names[1][0];
-    } else {
-      initials = names[0][0];
-    }
-    return initials.toUpperCase();
+    return name.split(' ').map((n) => n[0].toUpperCase()).take(2).join();
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(userProvider);
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (user == null) {
-      return const Center(
-        child: Text(
-          'No user data available',
-          style: TextStyle(fontSize: 18),
-        ),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     _nameController.text = user.name;
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(user, context),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoTile('Email', user.email),
-                  _buildInfoTile('User ID', user.userid ?? 'N/A'),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Edit Profile',
-                    style: GoogleFonts.roboto(
-                      fontSize: 20,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Profile Avatar
+                CircleAvatar(
+                  radius: 60,
+                  backgroundColor: colorScheme.primaryContainer,
+                  child: Text(
+                    getInitials(user.name),
+                    style: TextStyle(
+                      fontSize: 40,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
+                      color: colorScheme.primary,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  _buildEditableField('Name', _nameController, () {
+                ),
+                const SizedBox(height: 16),
+
+                // Name
+                Text(
+                  user.name,
+                  style: GoogleFonts.roboto(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onBackground,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Email
+                Text(
+                  user.email,
+                  style: GoogleFonts.roboto(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Profile Details
+                _buildProfileDetail('User ID', user.userid ?? 'N/A'),
+                const SizedBox(height: 24),
+
+                // Edit Name
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Edit Name',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
                     if (_nameController.text.isNotEmpty) {
                       ref.read(userProvider.notifier).updateUserName(_nameController.text);
                     }
-                  }),
-                  const SizedBox(height: 30),
-                  _buildLogoutButton(context),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: colorScheme.onPrimary,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Update Name'),
+                ),
+                const SizedBox(height: 40),
 
-  /// Builds the profile header with a gradient background
-  Widget _buildHeader(user, BuildContext context) {
-    return Container(
-      height: 220,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white60, Theme.of(context).primaryColor.withOpacity(0.1)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
-      child: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.white,
-                child: Text(
-                  getInitials(user.name),
-                  style: GoogleFonts.roboto(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).primaryColor,
+                // Logout Button
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      logoutUser();
+                      Navigator.pushReplacementNamed(context, '/signup');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Logout'),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                user.name,
-                style: GoogleFonts.roboto(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoTile(String label, String value) {
+  Widget _buildProfileDetail(String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
+        color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Icon(Icons.info_outline, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: GoogleFonts.roboto(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor.withOpacity(0.8),
-                ),
-              ),
-            ],
+          Text(
+            label,
+            style: GoogleFonts.roboto(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           Text(
             value,
             style: GoogleFonts.roboto(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEditableField(String label, TextEditingController controller, VoidCallback onUpdate) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: label,
-            labelStyle: TextStyle(color: Theme.of(context).primaryColor),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor),
-            ),
-            filled: true,
-            fillColor: Colors.grey.shade100,
-          ),
-        ),
-        const SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: onUpdate,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            textStyle: GoogleFonts.roboto(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          child: Text('Update $label'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLogoutButton(BuildContext context) {
-    return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          logoutUser();
-          Navigator.pushReplacementNamed(context, '/signup');
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.red.shade600,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-          shape: RoundedRectangleBorder(
-            side: const BorderSide(color: Colors.white38, width: 3),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          textStyle: GoogleFonts.roboto(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        child: const Text('Logout'),
       ),
     );
   }

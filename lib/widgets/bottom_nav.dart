@@ -63,10 +63,10 @@ class _BottomNavBarState extends State<BottomNavBar> with SingleTickerProviderSt
           icon: _buildIcon(Icons.person_add_outlined, _selectedIndex == 1),
           label: 'Friends',
         ),
-        BottomNavigationBarItem(
-          icon: _buildIcon(Icons.graphic_eq_rounded, _selectedIndex == 2),
-          label: 'Activity',
-        ),
+        // BottomNavigationBarItem(
+        //   icon: _buildIcon(Icons.graphic_eq_rounded, _selectedIndex == 2),
+        //   label: 'Activity',
+        // ),
         BottomNavigationBarItem(
           icon: _buildIcon(Icons.account_circle_outlined, _selectedIndex == 3),
           label: 'Account',

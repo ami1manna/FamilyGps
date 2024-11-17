@@ -26,7 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   final List<Widget> _pages = [
     const MapScreen(),
     const GroupScreen(),
-    const ActivityScreen(),
+    // const ActivityScreen(),
     const ProfileScreen(),
   ];
 
