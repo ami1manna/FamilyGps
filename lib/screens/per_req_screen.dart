@@ -6,12 +6,14 @@ class PermissionRequestScreen extends StatefulWidget {
   const PermissionRequestScreen({super.key});
 
   @override
-  _PermissionRequestScreenState createState() => _PermissionRequestScreenState();
+  _PermissionRequestScreenState createState() =>
+      _PermissionRequestScreenState();
 }
 
 class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
   bool locationPermissionGranted = false;
   bool backgroundPermissionGranted = false;
+  bool notificationPermissionGranted = false;
 
   @override
   void initState() {
@@ -23,7 +25,9 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
     // Check location permission
     LocationPermission locationPermission = await Geolocator.checkPermission();
     setState(() {
-      locationPermissionGranted = locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse;
+      locationPermissionGranted =
+          locationPermission == LocationPermission.always ||
+              locationPermission == LocationPermission.whileInUse;
     });
 
     // Check background permission
@@ -32,16 +36,26 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
       backgroundPermissionGranted = backgroundPermission;
     });
 
-    // Redirect if both permissions are granted
-    if (locationPermissionGranted && backgroundPermissionGranted) {
+    // Check notification permission
+    bool notificationPermission = await Permission.notification.isGranted;
+    setState(() {
+      notificationPermissionGranted = notificationPermission;
+    });
+
+    // Redirect if all permissions are granted
+    if (locationPermissionGranted &&
+        backgroundPermissionGranted &&
+        notificationPermissionGranted) {
       navigateToHomeScreen();
     }
   }
 
   Future<void> requestLocationPermission() async {
-    LocationPermission locationPermission = await Geolocator.requestPermission();
+    LocationPermission locationPermission =
+        await Geolocator.requestPermission();
 
-    if (locationPermission == LocationPermission.always || locationPermission == LocationPermission.whileInUse) {
+    if (locationPermission == LocationPermission.always ||
+        locationPermission == LocationPermission.whileInUse) {
       setState(() {
         locationPermissionGranted = true;
       });
@@ -62,8 +76,22 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
     checkRedirect();
   }
 
+  Future<void> requestNotificationPermission() async {
+    PermissionStatus status = await Permission.notification.request();
+
+    if (status.isGranted) {
+      setState(() {
+        notificationPermissionGranted = true;
+      });
+    }
+
+    checkRedirect();
+  }
+
   void checkRedirect() {
-    if (locationPermissionGranted && backgroundPermissionGranted) {
+    if (locationPermissionGranted &&
+        backgroundPermissionGranted &&
+        notificationPermissionGranted) {
       navigateToHomeScreen();
     }
   }
@@ -81,7 +109,6 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-           
             SizedBox(height: 16),
             Text(
               'To use this app, we need the following permissions:',
@@ -90,38 +117,76 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
             SizedBox(height: 16),
             ListTile(
               leading: Icon(
-                locationPermissionGranted ? Icons.check_circle : Icons.location_on,
+                locationPermissionGranted
+                    ? Icons.check_circle
+                    : Icons.location_on,
                 color: locationPermissionGranted ? Colors.green : Colors.red,
               ),
               title: Text("Location Permission"),
-              subtitle: Text("Allow the app to access your location."),
+              
               trailing: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
                 onPressed: locationPermissionGranted
                     ? null
                     : () {
                         requestLocationPermission();
                       },
-                child: Text(locationPermissionGranted ? "Granted" : "Allow"),
+                child: Text("Allow", style: TextStyle(fontSize: 15)),
               ),
             ),
             ListTile(
               leading: Icon(
-                backgroundPermissionGranted ? Icons.check_circle : Icons.location_searching,
+                backgroundPermissionGranted
+                    ? Icons.check_circle
+                    : Icons.location_searching,
                 color: backgroundPermissionGranted ? Colors.green : Colors.red,
               ),
               title: Text("Background Location Permission"),
-              subtitle: Text("Allow the app to access your location in the background."),
               trailing: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
                 onPressed: backgroundPermissionGranted
                     ? null
                     : () {
                         requestBackgroundPermission();
                       },
-                child: Text(backgroundPermissionGranted ? "Granted" : "Allow" ),
+               child: Text("Allow", style: TextStyle(fontSize: 15)),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                notificationPermissionGranted
+                    ? Icons.check_circle
+                    : Icons.notifications,
+                color:
+                    notificationPermissionGranted ? Colors.green : Colors.red,
+              ),
+              title: Text("Notification Permission"),
+             trailing: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                  
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                onPressed: notificationPermissionGranted
+                    ? null
+                    : () {
+                        requestNotificationPermission();
+                      },
+               child: Text( "Allow", style: TextStyle(fontSize: 15)),
               ),
             ),
             SizedBox(height: 32),
-            if (locationPermissionGranted && backgroundPermissionGranted)
+            if (locationPermissionGranted &&
+                backgroundPermissionGranted &&
+                notificationPermissionGranted)
               Center(
                 child: ElevatedButton(
                   onPressed: navigateToHomeScreen,

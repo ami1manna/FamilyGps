@@ -60,33 +60,76 @@ class LocationService {
     return true;
   }
 
-  @pragma('vm:entry-point')
-  static void onStart(ServiceInstance service) async {
-    if (service is AndroidServiceInstance) {
-      service.setAsForegroundService();
-    }
-
-    service.on('stopService').listen((event) {
-      service.stopSelf();
-    });
-
-    if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
-        title: "Location Service Active",
-        content: "Tracking your location",
-      );
-    }
-
-    Timer.periodic(const Duration(minutes: 5), (timer) async {
-      if (service is AndroidServiceInstance) {
-        final userId = await LocationServiceRepository.getUserId();
-        if (userId != null) {
-          await updateUserLocation(userId);
-        }
-      }
-    });
+@pragma('vm:entry-point')
+static void onStart(ServiceInstance service) async {
+  if (service is AndroidServiceInstance) {
+    service.setAsForegroundService();
   }
 
+  service.on('stopService').listen((event) {
+    service.stopSelf();
+  });
+
+  if (service is AndroidServiceInstance) {
+    service.setForegroundNotificationInfo(
+      title: "Location Service Active",
+      content: "Tracking your location",
+    );
+  }
+
+  // Initialize last position from stored location
+  final storedLocation = await LocationServiceRepository.getLastLocation();
+  if (storedLocation != null) {
+   _lastPosition = Position(
+    headingAccuracy: 0,
+  latitude: storedLocation['lat'] as double,
+  longitude: storedLocation['long'] as double,
+  timestamp: DateTime.now(),
+  accuracy: 0,
+  altitude: 0,
+  altitudeAccuracy: 0, // Add this line
+  heading: 0,
+  speed: 0,
+  speedAccuracy: 0,
+);
+  }
+
+  Timer.periodic(const Duration(minutes: 5), (timer) async {
+    if (service is AndroidServiceInstance) {
+      final userId = await LocationServiceRepository.getUserId();
+      if (userId != null) {
+        try {
+          Position currentPosition = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high);
+
+          if (_lastPosition != null) {
+            double distance = Geolocator.distanceBetween(
+                _lastPosition!.latitude,
+                _lastPosition!.longitude,
+                currentPosition.latitude,
+                currentPosition.longitude);
+
+            if (distance < updateThreshold) {
+              print('Background: Location hasn\'t changed significantly. Skipping update.');
+              return;
+            }
+          }
+
+          // Only update if location has changed significantly
+          await LocationServiceRepository.saveLastLocation(
+              currentPosition.latitude, currentPosition.longitude);
+          await updateUserLocationInDatabase(
+              currentPosition.latitude, currentPosition.longitude, userId);
+          _lastPosition = currentPosition;
+          
+          print("Background: Location updated: (${currentPosition.latitude}, ${currentPosition.longitude})");
+        } catch (e) {
+          print('Background: Error updating location: $e');
+        }
+      }
+    }
+  });
+}
   static Future<void> updateUserLocation(String userId) async {
     try {
       LocationPermission permission = await Geolocator.checkPermission();
