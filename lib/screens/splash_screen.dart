@@ -28,6 +28,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     }).catchError((error) {
       // Handle errors if any
       print('Error fetching user data: $error');
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const CheckSession()),
+        );
     });
   }
 
