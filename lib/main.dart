@@ -1,3 +1,4 @@
+
 import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_detail_screen.dart';
 import 'package:familygps/screens/home_screen.dart';
@@ -9,15 +10,11 @@ import 'package:familygps/utils/background_location.dart';
 import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:workmanager/workmanager.dart';
 
 void main() async {
    WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Workmanager with proper configuration
-  await Workmanager().initialize(
-    backLocationCallbackDispatcher,
-    isInDebugMode: true
-  );
+  await LocationService.initializeService();
+  
   runApp(ProviderScope(
     child: MyApp(),
   ));
@@ -30,6 +27,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'FamilyGps',
       theme: ThemeData(
         brightness: Brightness.light,

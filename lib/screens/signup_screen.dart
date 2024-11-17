@@ -1,4 +1,3 @@
-
 import 'package:familygps/controllers/auth.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:flutter/material.dart';
@@ -26,37 +25,35 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  void _signUp(BuildContext ctx) {
+    // Validate the form
+    if (!_formKey.currentState!.validate()) {
+      Toast.show(ctx, "Invalid Data", ToastType.error);
+    } else {
+      createUser(
+        usernameController.text,
+        emailController.text,
+        passwordController.text,
+      ).then((value) async {
+        if (value == 'success') {
+          // After successful signup, log the user in to create a session
+          String loginResult = await loginUser(
+            emailController.text,
+            passwordController.text,
+          );
 
-
-void _signUp(BuildContext ctx) {
-  // Validate the form
-  if (!_formKey.currentState!.validate()) {
-    Toast.show(ctx, "Invalid Data", ToastType.error);
-  } else {
-    createUser(
-      usernameController.text,
-      emailController.text,
-      passwordController.text,
-    ).then((value) async {
-      if (value == 'success') {
-        // After successful signup, log the user in to create a session
-        String loginResult = await loginUser(
-          emailController.text,
-          passwordController.text,
-        );
-
-        if (loginResult == 'success') {
-          Toast.show(ctx, "Signup and login successful!", ToastType.success);
-          Navigator.pushReplacementNamed(ctx, '/permissions');
+          if (loginResult == 'success') {
+            Toast.show(ctx, "Signup and login successful!", ToastType.success);
+            Navigator.pushReplacementNamed(ctx, '/permissions');
+          } else {
+            Toast.show(ctx, loginResult, ToastType.error);
+          }
         } else {
-          Toast.show(ctx, loginResult, ToastType.error);
+          Toast.show(ctx, value, ToastType.error);
         }
-      } else {
-        Toast.show(ctx, value, ToastType.error);
-      }
-    });
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +142,7 @@ void _signUp(BuildContext ctx) {
               const SizedBox(height: 20),
 
               // Password field
+              // Password field
               TextFormField(
                 controller: passwordController,
                 decoration: InputDecoration(
@@ -164,22 +162,23 @@ void _signUp(BuildContext ctx) {
                     borderSide: BorderSide(color: Colors.white),
                   ),
                 ),
-                obscureText: true,
+                obscureText: true, // Set to true to hide password input
                 style: const TextStyle(color: Colors.white),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your password';
-                  } else if (value.length < 6) {
-                    return 'Password must be at least 6 characters long';
+                  } else if (value.length < 8) {
+                    return 'Password must be at least 8 characters long';
                   }
-                  return null;
+                  return null; // Return null if validation passes
                 },
               ),
+
               const SizedBox(height: 30),
 
               // Sign Up Button
               ElevatedButton(
-                onPressed: ()=>_signUp(context),
+                onPressed: () => _signUp(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white, // White button
                   foregroundColor: const Color(0xFFA011F2), // Text in #A011F2
@@ -225,7 +224,6 @@ void _signUp(BuildContext ctx) {
                 child: const Text('Already have an account? '),
               ),
               const SizedBox(height: 20),
-              
             ],
           ),
         ),

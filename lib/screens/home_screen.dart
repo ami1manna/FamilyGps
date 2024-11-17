@@ -7,6 +7,7 @@ import 'package:familygps/screens/group_screen.dart';
 import 'package:familygps/screens/map_screen.dart';
 import 'package:familygps/screens/profile_screen.dart';
 import 'package:familygps/utils/background_location.dart';
+
 import 'package:familygps/utils/store_data.dart';
 import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/bottom_nav.dart';
@@ -42,21 +43,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    LocationService.stopForegroundUpdates();
+    LocationService.stopBackgroundService();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_currentUser != null) {
-      if (state == AppLifecycleState.paused) {
-        // App is in background
-        LocationService.stopForegroundUpdates();
-        LocationService.startBackgroundUpdates(_currentUser!.$id);
-      } else if (state == AppLifecycleState.resumed) {
-        // App is in foreground
-        LocationService.stopBackgroundUpdates();
-        LocationService.startForegroundUpdates(_currentUser!.$id);
+      switch (state) {
+        case AppLifecycleState.paused:
+        case AppLifecycleState.inactive:
+          LocationService.startBackgroundService();
+          break;
+        case AppLifecycleState.resumed:
+          LocationService.stopBackgroundService();
+          LocationService.updateUserLocation(_currentUser!.$id);
+          break;
+        default:
+          break;
       }
     }
   }
@@ -71,12 +75,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           setUserState();
         });
 
-        // Save user ID to local storage
-        print(user.$id);
+        // Save user ID to local storage using LocationServiceRepository
         await LocationServiceRepository.saveUserId(_currentUser!.$id);
 
-        // Start foreground location updates
-        LocationService.startForegroundUpdates(_currentUser!.$id);
+        // Start location updates
+        LocationService.updateUserLocation(_currentUser!.$id);
         
       } else {
         setState(() {

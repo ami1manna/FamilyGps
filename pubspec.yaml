@@ -50,8 +50,11 @@ dependencies:
   sensors_plus: ^6.1.0
   google_fonts: ^4.0.0
   workmanager: ^0.5.2
+  
   flutter_background_service: ^5.0.10
   flutter_background_service_android: ^6.2.7
+  flutter_local_notifications: ^17.2.4
+
 
  
  
