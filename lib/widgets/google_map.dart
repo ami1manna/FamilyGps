@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:familygps/models/users_locations.dart';
 import 'package:familygps/providers/locations_provider.dart';
+import 'package:familygps/utils/store_data.dart';
 import 'package:familygps/widgets/custom_marker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,13 +16,27 @@ class GoogleMapWidget extends ConsumerStatefulWidget {
 
 class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   GoogleMapController? _mapController;
-  final LatLng _initialPosition =
-      const LatLng(37.7749, -122.4194); // San Francisco
+  LatLng _initialPosition = const LatLng(37.7749, -122.4194); // Default to San Francisco
   Set<Marker> _markers = {};
 
   @override
   void initState() {
     super.initState();
+    _loadLastKnownLocation();
+  }
+
+  Future<void> _loadLastKnownLocation() async {
+    // Retrieve last known location from shared preferences
+    final lastLocation = await LocationServiceRepository.getLastLocation();
+    
+    // Check if last location exists
+    if (lastLocation['lat'] != null && lastLocation['long'] != null) {
+      setState(() {
+        _initialPosition = LatLng(lastLocation['lat']!, lastLocation['long']!);
+      });
+    }
+
+    // Update markers after loading last location
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateMarkers(ref.read(userLocationProvider));
     });
@@ -70,7 +85,6 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             zoomControlsEnabled: false,
             tiltGesturesEnabled: true,
             trafficEnabled: true,
-            
           ),
           Positioned(
             top: 10,
@@ -93,8 +107,7 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             }
           },
         );
-        return const SizedBox
-            .shrink(); // This widget doesn't render anything visible
+        return const SizedBox.shrink();
       },
     );
   }
