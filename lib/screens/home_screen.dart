@@ -49,21 +49,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_currentUser != null) {
-      switch (state) {
-        case AppLifecycleState.paused:
-        case AppLifecycleState.inactive:
+  if (_currentUser != null) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        // Initialize service before starting
+        LocationService.initializeService().then((_) {
           LocationService.startBackgroundService();
-          break;
-        case AppLifecycleState.resumed:
-          LocationService.stopBackgroundService();
-          LocationService.updateUserLocation(_currentUser!.$id);
-          break;
-        default:
-          break;
-      }
+        });
+        break;
+      case AppLifecycleState.resumed:
+        LocationService.stopBackgroundService();
+        LocationService.updateUserLocation(_currentUser!.$id);
+        break;
+      default:
+        break;
     }
   }
+}
 
   Future<void> _fetchUser() async {
     try {
