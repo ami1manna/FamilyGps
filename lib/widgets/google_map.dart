@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:familygps/models/users_locations.dart';
 import 'package:familygps/providers/locations_provider.dart';
 import 'package:familygps/utils/store_data.dart';
@@ -18,25 +20,39 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   GoogleMapController? _mapController;
   LatLng _initialPosition = const LatLng(37.7749, -122.4194); // Default to San Francisco
   Set<Marker> _markers = {};
+  String _currentMapStyle = '';
+  bool isDarkMode = false;
 
   @override
   void initState() {
     super.initState();
+    _loadMapStyles();
     _loadLastKnownLocation();
   }
 
+  Future<void> _loadMapStyles() async {
+    try {
+      // Load both dark and light styles
+      String darkStyle = await rootBundle.loadString('assets/dark_map_style.json');
+      String lightStyle = await rootBundle.loadString('assets/light_map_style.json');
+
+      // Set the initial map style
+      setState(() {
+        _currentMapStyle = isDarkMode ? darkStyle : lightStyle;
+      });
+    } catch (e) {
+      print('Error loading map styles: $e');
+    }
+  }
+
   Future<void> _loadLastKnownLocation() async {
-    // Retrieve last known location from shared preferences
     final lastLocation = await LocationServiceRepository.getLastLocation();
-    
-    // Check if last location exists
     if (lastLocation['lat'] != null && lastLocation['long'] != null) {
       setState(() {
         _initialPosition = LatLng(lastLocation['lat']!, lastLocation['long']!);
       });
     }
 
-    // Update markers after loading last location
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateMarkers(ref.read(userLocationProvider));
     });
@@ -63,6 +79,17 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
     }
   }
 
+  void _toggleMapStyle() {
+    setState(() {
+      isDarkMode = !isDarkMode;
+      _loadMapStyles().then((_) {
+        if (_mapController != null) {
+          _mapController!.setMapStyle(_currentMapStyle);
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,13 +98,14 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
           GoogleMap(
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
+              _mapController?.setMapStyle(_currentMapStyle);
               controller.moveCamera(
                 CameraUpdate.newLatLng(_initialPosition),
               );
             },
             initialCameraPosition: CameraPosition(
               target: _initialPosition,
-              zoom: 10.0,
+              zoom: 15.0,
             ),
             markers: _markers,
             mapType: MapType.normal,
@@ -86,10 +114,26 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             tiltGesturesEnabled: true,
             trafficEnabled: true,
           ),
+          
+          // Location Update Listener
           Positioned(
             top: 10,
             right: 10,
             child: _buildLocationUpdateListener(),
+          ),
+          
+          // Map Style Toggle Button
+          Positioned(
+            top: 70,
+            right: 10,
+            child: FloatingActionButton(
+              backgroundColor: Colors.white,
+              onPressed: _toggleMapStyle,
+              child: Icon(
+                isDarkMode ? Icons.wb_sunny : Icons.nights_stay,
+                color: isDarkMode ? Colors.orange : Colors.black,
+              ),
+            ),
           ),
         ],
       ),
