@@ -114,15 +114,11 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             tiltGesturesEnabled: true,
             trafficEnabled: true,
           ),
-          
-          // Location Update Listener
           Positioned(
             top: 10,
             right: 10,
             child: _buildLocationUpdateListener(),
           ),
-          
-          // Map Style Toggle Button
           Positioned(
             top: 70,
             right: 10,
@@ -140,19 +136,37 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
     );
   }
 
-  Widget _buildLocationUpdateListener() {
-    return Consumer(
-      builder: (context, ref, _) {
-        ref.listen<List<UserLocation>>(
-          userLocationProvider,
-          (previous, next) {
-            if (next != previous) {
-              _updateMarkers(next);
-            }
-          },
-        );
-        return const SizedBox.shrink();
-      },
-    );
-  }
+Widget _buildLocationUpdateListener() {
+  return Consumer(
+    builder: (context, ref, _) {
+      ref.listen<List<UserLocation>>(
+        userLocationProvider,
+        (previous, next) {
+          if (next != previous) {
+            _updateMarkers(next);
+          }
+        },
+      );
+
+      // Listen for selected user changes
+      final selectedUser = ref.watch(
+        userLocationProvider.notifier.select((notifier) => notifier.selectedUser)
+      );
+
+      // Animate camera when selected user changes
+      if (selectedUser != null && _mapController != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(
+              LatLng(selectedUser.latitude, selectedUser.longitude),
+              15.0, // You can adjust the zoom level as needed
+            ),
+          );
+        });
+      }
+
+      return const SizedBox.shrink();
+    },
+  );
+}
 }

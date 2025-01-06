@@ -91,9 +91,22 @@ class _HomeDraggableBottomSheetState
           ),
           child: SingleChildScrollView(
             controller: scrollController,
-            child: _currentPage == 0
-                ? _buildListView(context)
-                : _buildGroupDetails(context),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 16),
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                _currentPage == 0
+                    ? _buildListView(context)
+                    : _buildGroupDetails(context),
+              ],
+            ),
           ),
         );
       },
@@ -103,15 +116,6 @@ class _HomeDraggableBottomSheetState
   Widget _buildListView(BuildContext context) {
     return Column(
       children: [
-        Container(
-          margin: const EdgeInsets.only(top: 8, bottom: 16),
-          width: 40,
-          height: 5,
-          decoration: BoxDecoration(
-            color: Colors.grey[300],
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
