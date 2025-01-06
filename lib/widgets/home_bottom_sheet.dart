@@ -12,16 +12,17 @@ class HomeDraggableBottomSheet extends ConsumerStatefulWidget {
   const HomeDraggableBottomSheet({super.key});
 
   @override
-  ConsumerState<HomeDraggableBottomSheet> createState() => _HomeDraggableBottomSheetState();
+  ConsumerState<HomeDraggableBottomSheet> createState() =>
+      _HomeDraggableBottomSheetState();
 }
 
-class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSheet> {
+class _HomeDraggableBottomSheetState
+    extends ConsumerState<HomeDraggableBottomSheet> {
   List<String> userGroups = [];
   List<String> groupCode = [];
   bool isLoading = true;
   int _currentPage = 0;
   String? _selectedGroup;
-  List<String>? _membersIds;
 
   @override
   void initState() {
@@ -53,10 +54,10 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
     }
   }
 
-  void _navigateToGroupDetails(String groupName, List<String> memberIds) {
+  void _navigateToGroupDetails(String groupName) {
     setState(() {
       _selectedGroup = groupName;
-      _membersIds = memberIds;
+
       _currentPage = 1;
     });
   }
@@ -65,7 +66,6 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
     setState(() {
       _currentPage = 0;
       _selectedGroup = null;
-      _membersIds = null;
     });
   }
 
@@ -143,8 +143,8 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
                         vertical: 10,
                       ),
                       leading: CircleAvatar(
-                        backgroundColor: Colors
-                            .primaries[index % Colors.primaries.length],
+                        backgroundColor:
+                            Colors.primaries[index % Colors.primaries.length],
                         child: Text(
                           userGroups[index][0].toUpperCase(),
                           style: const TextStyle(color: Colors.white),
@@ -157,8 +157,7 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
                           fontSize: 16,
                         ),
                       ),
-                      trailing:
-                          const Icon(Icons.arrow_forward_ios, size: 16),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       onTap: () async {
                         String selectedGroupCode = groupCode[index];
                         try {
@@ -167,8 +166,8 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
                           await ref
                               .read(userLocationProvider.notifier)
                               .fetchUserLocations(memberIds);
-                          _navigateToGroupDetails(
-                              userGroups[index], memberIds);
+
+                          _navigateToGroupDetails(userGroups[index]);
                         } catch (e) {
                           print('Error fetching group member IDs: $e');
                           // Handle error (e.g., show a snackbar)
@@ -183,14 +182,29 @@ class _HomeDraggableBottomSheetState extends ConsumerState<HomeDraggableBottomSh
   }
 
   Widget _buildGroupDetails(BuildContext context) {
-    return Column(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: _goBackToListView,
-        ),
-        HomeBottomSheetGroupDetail(title: _selectedGroup!, members: _membersIds!)
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: _goBackToListView,
+            ),
+            const SizedBox(width: 30.0),
+            Text(
+              _selectedGroup ?? '',
+              style: TextStyle(
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueGrey[800],
+              ),
+            ),
+          ]),
+          HomeBottomSheetGroupDetail()
+        ],
+      ),
     );
   }
 }
