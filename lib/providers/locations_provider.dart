@@ -113,7 +113,9 @@ class UserLocationProvider extends StateNotifier<List<UserLocation>> {
         print('Error fetching user document for $userId: $e');
       }
     }
-
+    // by default select first user as selected
+    _selectedUser = initialLocations.isNotEmpty ? initialLocations.first : null;
+    
     // Update the state with the initial locations
     state = initialLocations;
 
