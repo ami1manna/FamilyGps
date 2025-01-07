@@ -18,7 +18,8 @@ class GoogleMapWidget extends ConsumerStatefulWidget {
 
 class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   GoogleMapController? _mapController;
-  LatLng _initialPosition = const LatLng(37.7749, -122.4194); // Default to San Francisco
+  LatLng _initialPosition =
+      const LatLng(37.7749, -122.4194); // Default to San Francisco
   Set<Marker> _markers = {};
   String _currentMapStyle = '';
   bool isDarkMode = false;
@@ -33,8 +34,10 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   Future<void> _loadMapStyles() async {
     try {
       // Load both dark and light styles
-      String darkStyle = await rootBundle.loadString('assets/dark_map_style.json');
-      String lightStyle = await rootBundle.loadString('assets/light_map_style.json');
+      String darkStyle =
+          await rootBundle.loadString('assets/dark_map_style.json');
+      String lightStyle =
+          await rootBundle.loadString('assets/light_map_style.json');
 
       // Set the initial map style
       setState(() {
@@ -99,9 +102,9 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             onMapCreated: (GoogleMapController controller) {
               _mapController = controller;
               _mapController?.setMapStyle(_currentMapStyle);
-              controller.moveCamera(
-                CameraUpdate.newLatLng(_initialPosition),
-              );
+              // controller.moveCamera(
+              //   CameraUpdate.newLatLng(_initialPosition),
+              // );
             },
             initialCameraPosition: CameraPosition(
               target: _initialPosition,
@@ -113,21 +116,21 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
             zoomControlsEnabled: false,
             tiltGesturesEnabled: true,
             trafficEnabled: true,
+            compassEnabled: true,
+            myLocationButtonEnabled: false,
           ),
-          
-          // Location Update Listener
+          Positioned(
+            top: 0,
+            right: 0,
+            child: _buildLocationUpdateListener(),
+          ),
           Positioned(
             top: 10,
             right: 10,
-            child: _buildLocationUpdateListener(),
-          ),
-          
-          // Map Style Toggle Button
-          Positioned(
-            top: 70,
-            right: 10,
             child: FloatingActionButton(
+              mini: true,
               backgroundColor: Colors.white,
+              tooltip: "Dark/Light",
               onPressed: _toggleMapStyle,
               child: Icon(
                 isDarkMode ? Icons.wb_sunny : Icons.nights_stay,
@@ -135,6 +138,27 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
               ),
             ),
           ),
+          Positioned(
+            top: 70,
+            right: 10,
+            child: FloatingActionButton(
+              backgroundColor: Colors.white,
+              mini: true,
+              tooltip: "Re-centered",
+              onPressed: () {
+                final selectedUser =
+                    ref.read(userLocationProvider.notifier).selectedUser;
+                if (selectedUser != null && _mapController != null) {
+                  _mapController?.animateCamera(
+                    CameraUpdate.newLatLng(
+                      LatLng(selectedUser.latitude, selectedUser.longitude),
+                    ),
+                  );
+                }
+              },
+              child: Icon(Icons.arrow_outward_rounded),
+            ),
+          )
         ],
       ),
     );
@@ -143,14 +167,57 @@ class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   Widget _buildLocationUpdateListener() {
     return Consumer(
       builder: (context, ref, _) {
+        // Listen for all location updates
         ref.listen<List<UserLocation>>(
           userLocationProvider,
           (previous, next) {
             if (next != previous) {
               _updateMarkers(next);
+
+              // Get the currently selected user
+              final selectedUser =
+                  ref.read(userLocationProvider.notifier).selectedUser;
+
+              // If a user is selected, check if their location has changed
+              if (selectedUser != null && _mapController != null) {
+                // Find the updated location for the selected user
+                final updatedUserLocation = next.firstWhere(
+                  (location) => location.userId == selectedUser.userId,
+                  orElse: () => selectedUser,
+                );
+
+                // If the location is different, animate camera
+                if (updatedUserLocation.latitude != selectedUser.latitude ||
+                    updatedUserLocation.longitude != selectedUser.longitude) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLng(
+                        LatLng(updatedUserLocation.latitude,
+                            updatedUserLocation.longitude),
+                      ),
+                    );
+                  });
+                }
+              }
             }
           },
         );
+
+        // Existing selected user change listener
+        final selectedUser = ref.watch(userLocationProvider.notifier
+            .select((notifier) => notifier.selectedUser));
+
+        // Animate camera when selected user changes
+        if (selectedUser != null && _mapController != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLng(
+                LatLng(selectedUser.latitude, selectedUser.longitude),
+              ),
+            );
+          });
+        }
+
         return const SizedBox.shrink();
       },
     );
