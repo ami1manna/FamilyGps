@@ -1,11 +1,12 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:familygps/constants/appwrite_config.dart';
+ 
 
 class DetailGroupOperation {
   late Client client;
   late Databases _databases;
-
+  
   DetailGroupOperation() {
     client = Client()
         .setEndpoint(END_POINT) // Your Appwrite endpoint
@@ -13,7 +14,8 @@ class DetailGroupOperation {
         .setSelfSigned();
     _databases = Databases(client);
   }
-
+//  get creator id 
+ 
 // group userif only 
 Future<List<String>> fetchGroupMemberIds(String groupCode) async {
   try {
@@ -23,6 +25,8 @@ Future<List<String>> fetchGroupMemberIds(String groupCode) async {
       collectionId: GROUP_COLLECTION_ID,
       queries: [Query.equal('groupCode', groupCode)],
     );
+
+   
 
     if (groupDoc.total > 0) {
       // Extract the 'members' field from the group document
@@ -306,5 +310,27 @@ Future<String> deleteGroup(String groupCode) async {
       return 'Failed to fetch group name';
     }
   }
+
+ // Fetch the creator ID for a specific group code
+Future<String> fetchGroupCreatorId(String groupCode) async {
+  try {
+    // Fetch the group document by group code
+    DocumentList groupDoc = await _databases.listDocuments(
+      databaseId: DATABASE_ID,
+      collectionId: GROUP_COLLECTION_ID,
+      queries: [Query.equal('groupCode', groupCode)],
+    );
+
+    if (groupDoc.total > 0) {
+      // Return the creator ID
+      return groupDoc.documents[0].data['creatorId'].toString();
+    } else {
+      return '';
+    }
+  } catch (e) {
+    print('Error fetching group creator ID: $e');
+    return '';
+  }
+}
 
 }
