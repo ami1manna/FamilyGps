@@ -1,136 +1,224 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
 import 'package:familygps/constants/appwrite_config.dart';
-
+ 
 class DetailGroupOperation {
   late Client client;
   late Databases _databases;
-
+  
   DetailGroupOperation() {
     client = Client()
-        .setEndpoint(END_POINT) // Your Appwrite endpoint
-        .setProject(PROJECT_ID) // Your project ID
+        .setEndpoint(END_POINT)
+        .setProject(PROJECT_ID)
         .setSelfSigned();
     _databases = Databases(client);
   }
 
-// group userif only 
-Future<List<String>> fetchGroupMemberIds(String groupCode) async {
-  try {
-    // Fetch group details by group code
-    DocumentList groupDoc = await _databases.listDocuments(
-      databaseId: DATABASE_ID,
-      collectionId: GROUP_COLLECTION_ID,
-      queries: [Query.equal('groupCode', groupCode)],
-    );
-
-    if (groupDoc.total > 0) {
-      // Extract the 'members' field from the group document
-      List<String> memberIds = List<String>.from(groupDoc.documents[0].data['members'] ?? []);
-      return memberIds; // Return the list of user IDs
-    }
-
-    return []; // Return an empty list if no group found or no members
-  } catch (e) {
-    print('Error fetching group member IDs: $e');
-    return [];
-  }
-}
-
-
-// groups members email , name , userid
-Future<List<Map<String, String>>> fetchGroupMembers(String groupCode) async {
-  try {
-    // Fetch group details by group code
-    DocumentList groupDoc = await _databases.listDocuments(
-      databaseId: DATABASE_ID,
-      collectionId: GROUP_COLLECTION_ID,
-      queries: [Query.equal('groupCode', groupCode)],
-    );
-
-    if (groupDoc.total > 0) {
-      List<dynamic> members = groupDoc.documents[0].data['members'] ?? [];
-
-      // Create a list to store user details (name and email) instead of userIds
-      List<Map<String, String>> memberDetails = [];
-
-      // Fetch each user's document by their userId and retrieve their name and email
-      for (String userId in members) {
-        try {
-          // Fetch the user's document by their userId (document ID)
-          Document userDoc = await _databases.getDocument(
-            databaseId: DATABASE_ID,
-            collectionId: USERS_COLLECTION_ID,
-            documentId: userId,
-          );
-
-          // Get the user's name and email
-          String userName = userDoc.data['name'] ?? 'Unknown';
-          String userEmail = userDoc.data['email'] ?? 'Unknown';
-
-          // Add the user's name and email to the list
-          memberDetails.add({
-            'userId': userId,
-            'name': userName,
-            'email': userEmail,
-          });
-        } catch (e) {
-          print('Error fetching user document for $userId: $e');
-        }
-      }
-
-      return memberDetails; // Return the list of user names and emails
-    }
-
-    return [];
-  } catch (e) {
-    print('Error fetching group members: $e');
-    return [];
-  }
-}
-
-
-// Add a user to a group by their email and also add the group code to the user's groups list
-Future<String> addUserToGroup(String groupCode, String email) async {
-  try {
-    // Fetch the user's document by their email
-    DocumentList userDoc = await _databases.listDocuments(
-      databaseId: DATABASE_ID,
-      collectionId: USERS_COLLECTION_ID,
-      queries: [Query.equal('email', email)],
-    );
-
-    if (userDoc.total > 0) {
-      // Get the user's ID from the document
-      String userId = userDoc.documents[0].$id;
-
-      // Fetch the group document by group code
+  // Centralized method to fetch group document by group code
+  Future<Document?> _fetchGroupDocument(String groupCode) async {
+    try {
       DocumentList groupDoc = await _databases.listDocuments(
         databaseId: DATABASE_ID,
         collectionId: GROUP_COLLECTION_ID,
         queries: [Query.equal('groupCode', groupCode)],
       );
 
-      if (groupDoc.total > 0) {
-        // Add the user to the group's members list
-        List<dynamic> members = groupDoc.documents[0].data['members'] ?? [];
-        if (!members.contains(userId)) {
-          members.add(userId);
+      return groupDoc.total > 0 ? groupDoc.documents[0] : null;
+    } catch (e) {
+      print('Error fetching group document: $e');
+      return null;
+    }
+  }
 
-          // Update the group with the new member
-          await _databases.updateDocument(
-            databaseId: DATABASE_ID,
-            collectionId: GROUP_COLLECTION_ID,
-            documentId: groupDoc.documents[0].$id,
-            data: {'members': members},
-          );
+  // Centralized method to fetch user document by ID
+  Future<Document?> _fetchUserDocument(String userId) async {
+    try {
+      return await _databases.getDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: userId,
+      );
+    } catch (e) {
+      print('Error fetching user document: $e');
+      return null;
+    }
+  }
 
-          // Add the group code to the user's groups list
-          List<dynamic> userGroups = userDoc.documents[0].data['groups'] ?? [];
-          if (!userGroups.contains(groupCode)) {
-            userGroups.add(groupCode);
+  // Centralized method to fetch user document by email
+  Future<Document?> _fetchUserDocumentByEmail(String email) async {
+    try {
+      DocumentList userDoc = await _databases.listDocuments(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        queries: [Query.equal('email', email)],
+      );
 
-            // Update the user's document with the updated groups list
+      return userDoc.total > 0 ? userDoc.documents[0] : null;
+    } catch (e) {
+      print('Error fetching user document by email: $e');
+      return null;
+    }
+  }
+
+  Future<List<String>> fetchGroupMemberIds(String groupCode) async {
+    try {
+      Document? groupDoc = await _fetchGroupDocument(groupCode);
+      return groupDoc != null 
+        ? List<String>.from(groupDoc.data['members'] ?? [])
+        : [];
+    } catch (e) {
+      print('Error fetching group member IDs: $e');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, String>>> fetchGroupMembers(String groupCode) async {
+    try {
+      Document? groupDoc = await _fetchGroupDocument(groupCode);
+      if (groupDoc == null) return [];
+
+      List<dynamic> members = groupDoc.data['members'] ?? [];
+      List<Map<String, String>> memberDetails = [];
+
+      // Batch fetch user documents
+      List<Future<Document?>> userFutures = members
+          .map((userId) => _fetchUserDocument(userId))
+          .toList();
+      
+      List<Document?> userDocs = await Future.wait(userFutures);
+
+      for (int i = 0; i < members.length; i++) {
+        Document? userDoc = userDocs[i];
+        if (userDoc != null) {
+          memberDetails.add({
+            'userId': members[i],
+            'name': userDoc.data['name'] ?? 'Unknown',
+            'email': userDoc.data['email'] ?? 'Unknown',
+          });
+        }
+      }
+
+      return memberDetails;
+    } catch (e) {
+      print('Error fetching group members: $e');
+      return [];
+    }
+  }
+
+  Future<String> addUserToGroup(String groupCode, String email) async {
+    try {
+      // Fetch user by email
+      Document? userDoc = await _fetchUserDocumentByEmail(email);
+      if (userDoc == null) {
+        return 'User not found with the provided email';
+      }
+
+      String userId = userDoc.$id;
+      Document? groupDoc = await _fetchGroupDocument(groupCode);
+
+      if (groupDoc == null) {
+        return 'Group not found';
+      }
+
+      List<dynamic> members = groupDoc.data['members'] ?? [];
+      if (members.contains(userId)) {
+        return 'User is already a member of the group';
+      }
+
+      // Update group members
+      members.add(userId);
+      await _databases.updateDocument(
+        databaseId: DATABASE_ID,
+        collectionId: GROUP_COLLECTION_ID,
+        documentId: groupDoc.$id,
+        data: {'members': members},
+      );
+
+      // Update user groups
+      List<dynamic> userGroups = userDoc.data['groups'] ?? [];
+      if (!userGroups.contains(groupCode)) {
+        userGroups.add(groupCode);
+        await _databases.updateDocument(
+          databaseId: DATABASE_ID,
+          collectionId: USERS_COLLECTION_ID,
+          documentId: userId,
+          data: {'groups': userGroups},
+        );
+      }
+
+      return 'User added successfully';
+    } catch (e) {
+      print('Error adding user to group: $e');
+      return 'Failed to add user';
+    }
+  }
+
+  Future<String> deleteUserFromGroup(String groupCode, String userId) async {
+    try {
+      Document? groupDoc = await _fetchGroupDocument(groupCode);
+      if (groupDoc == null) {
+        return 'Group not found';
+      }
+
+      List<dynamic> members = groupDoc.data['members'] ?? [];
+      if (!members.contains(userId)) {
+        return 'User is not a member of this group';
+      }
+
+      // Remove user from group members
+      members.remove(userId);
+      await _databases.updateDocument(
+        databaseId: DATABASE_ID,
+        collectionId: GROUP_COLLECTION_ID,
+        documentId: groupDoc.$id,
+        data: {'members': members},
+      );
+
+      // Fetch and update user's groups
+      Document? userDoc = await _fetchUserDocument(userId);
+      if (userDoc != null) {
+        List<dynamic> userGroups = userDoc.data['groups'] ?? [];
+        userGroups.remove(groupCode);
+
+        await _databases.updateDocument(
+          databaseId: DATABASE_ID,
+          collectionId: USERS_COLLECTION_ID,
+          documentId: userId,
+          data: {'groups': userGroups},
+        );
+      }
+
+      return 'User deleted successfully';
+    } catch (e) {
+      print('Error deleting user from group: $e');
+      return 'Failed to delete user from group';
+    }
+  }
+
+  Future<String> deleteGroup(String groupCode) async {
+    try {
+      Document? groupDoc = await _fetchGroupDocument(groupCode);
+      if (groupDoc == null) {
+        return 'Group not found';
+      }
+
+      List<String> members = List<String>.from(groupDoc.data['members'] ?? []);
+      
+      // Delete group document
+      await _databases.deleteDocument(
+        databaseId: DATABASE_ID,
+        collectionId: GROUP_COLLECTION_ID,
+        documentId: groupDoc.$id,
+      );
+
+      // Batch update user documents
+      List<Future<void>> updateFutures = members.map((userId) async {
+        try {
+          Document? userDoc = await _fetchUserDocument(userId);
+          if (userDoc != null) {
+            List<dynamic> userGroups = userDoc.data['groups'] ?? [];
+            userGroups.remove(groupCode);
+
             await _databases.updateDocument(
               databaseId: DATABASE_ID,
               collectionId: USERS_COLLECTION_ID,
@@ -138,173 +226,40 @@ Future<String> addUserToGroup(String groupCode, String email) async {
               data: {'groups': userGroups},
             );
           }
-
-          return 'User added successfully';
-        } else {
-          return 'User is already a member of the group';
-        }
-      } else {
-        return 'Group not found';
-      }
-    } else {
-      return 'User not found with the provided email';
-    }
-  } catch (e) {
-    print('Error adding user to group: $e');
-    return 'Failed to add user';
-  }
-}
-
-  // Delete a user from a group and also remove the group code from the user's document
-// Delete a user from a group and also remove the group code from the user's document
-Future<String> deleteUserFromGroup(String groupCode, String userId) async {
-  try {
-    // Fetch the group document by group code
-    DocumentList groupDoc = await _databases.listDocuments(
-      databaseId: DATABASE_ID,
-      collectionId: GROUP_COLLECTION_ID,
-      queries: [Query.equal('groupCode', groupCode)],
-    );
-
-    if (groupDoc.total > 0) {
-      // Get the group document ID
-      String groupId = groupDoc.documents[0].$id;
-
-      // Fetch the current members of the group
-      List<dynamic> members = groupDoc.documents[0].data['members'] ?? [];
-
-      // Check if the user is part of the group
-      if (members.contains(userId)) {
-        // Remove the user from the group's members list
-        members.remove(userId);
-
-        // Update the group document to remove the user
-        await _databases.updateDocument(
-          databaseId: DATABASE_ID,
-          collectionId: GROUP_COLLECTION_ID,
-          documentId: groupId,
-          data: {'members': members},
-        );
-
-        // Fetch the user's document by their userId (document ID)
-        Document userDoc = await _databases.getDocument(
-          databaseId: DATABASE_ID,
-          collectionId: USERS_COLLECTION_ID, // Assuming users are stored by userId as document ID
-          documentId: userId,
-        );
-
-        // Get the user's current list of groups
-        List<dynamic> userGroups = userDoc.data['groups'] ?? [];
-
-        // Remove the group code from the user's groups list if it exists
-        if (userGroups.contains(groupCode)) {
-          userGroups.remove(groupCode);
-
-          // Update the user's document with the modified groups list
-          await _databases.updateDocument(
-            databaseId: DATABASE_ID,
-            collectionId: USERS_COLLECTION_ID,
-            documentId: userId,
-            data: {'groups': userGroups},
-          );
-        }
-
-        return 'User deleted successfully';
-      } else {
-        return 'User is not a member of this group';
-      }
-    } else {
-      return 'Group not found';
-    }
-  } catch (e) {
-    print('Error deleting user from group: $e');
-    return 'Failed to delete user from group';
-  }
-}
-
-  // Delete a group
-Future<String> deleteGroup(String groupCode) async {
-  try {
-    // Fetch the group document by group code
-    DocumentList groupDoc = await _databases.listDocuments(
-      databaseId: DATABASE_ID,
-      collectionId: GROUP_COLLECTION_ID,
-      queries: [Query.equal('groupCode', groupCode)],
-    );
-
-    if (groupDoc.total > 0) {
-      // Get the group document ID
-      String groupId = groupDoc.documents[0].$id;
-
-      // Delete the group document
-      await _databases.deleteDocument(
-        databaseId: DATABASE_ID,
-        collectionId: GROUP_COLLECTION_ID,
-        documentId: groupId,
-      );
-
-      // Fetch all users who are part of this group
-      List<String> members = List<String>.from(groupDoc.documents[0].data['members'] ?? []);
-      
-      // Iterate through each member and remove this group code from their 'groups' list
-      for (String userId in members) {
-        try {
-          // Fetch the user's document by their userId (document ID)
-          Document userDoc = await _databases.getDocument(
-            databaseId: DATABASE_ID,
-            collectionId: USERS_COLLECTION_ID, // Assuming users are stored by userId as document ID
-            documentId: userId,
-          );
-
-          // Get the user's current list of groups
-          List<dynamic> userGroups = userDoc.data['groups'] ?? [];
-
-          // Remove the group code from the list
-          userGroups.remove(groupCode);
-
-          // Update the user's document with the modified groups list
-          await _databases.updateDocument(
-            databaseId: DATABASE_ID,
-            collectionId: USERS_COLLECTION_ID,
-            documentId: userId,
-            data: {'groups': userGroups},
-          );
         } catch (e) {
-          print('Error fetching user document for $userId: $e');
+          print('Error updating user document for $userId: $e');
         }
-      }
+      }).toList();
+
+      await Future.wait(updateFutures);
 
       return 'Group deleted successfully';
-    } else {
-      return 'Group not found';
+    } catch (e) {
+      print('Error deleting group: $e');
+      return 'Failed to delete group';
     }
-  } catch (e) {
-    print('Error deleting group: $e');
-    return 'Failed to delete group';
   }
-}
 
-
-  // Fetch the group name for a specific group code
   Future<String> fetchGroupNameByCode(String groupCode) async {
     try {
-      // Fetch the group document by group code
-      DocumentList groupDoc = await _databases.listDocuments(
-        databaseId: DATABASE_ID,
-        collectionId: GROUP_COLLECTION_ID,
-        queries: [Query.equal('groupCode', groupCode)],
-      );
-
-      if (groupDoc.total > 0) {
-        // Return the group name
-        return groupDoc.documents[0].data['groupName'].toString();
-      } else {
-        return 'Group not found';
-      }
+      Document? groupDoc = await _fetchGroupDocument(groupCode); return groupDoc != null 
+        ? groupDoc.data['groupName'].toString() 
+        : 'Group not found';
     } catch (e) {
       print('Error fetching group name: $e');
       return 'Failed to fetch group name';
     }
   }
 
+  Future<String> fetchGroupCreatorId(String groupCode) async {
+    try {
+      Document? groupDoc = await _fetchGroupDocument(groupCode);
+      return groupDoc != null 
+        ? groupDoc.data['creatorId'].toString() 
+        : '';
+    } catch (e) {
+      print('Error fetching group creator ID: $e');
+      return '';
+    }
+  }
 }
