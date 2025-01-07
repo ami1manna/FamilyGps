@@ -19,7 +19,7 @@ class GoogleMapWidget extends ConsumerStatefulWidget {
 class _GoogleMapWidgetState extends ConsumerState<GoogleMapWidget> {
   GoogleMapController? _mapController;
   LatLng _initialPosition =
-      const LatLng(37.7749, -122.4194); // Default to San Francisco
+      const LatLng( 20.00000000  , 77.00000000  ); // Default to  India
   Set<Marker> _markers = {};
   String _currentMapStyle = '';
   bool isDarkMode = false;
