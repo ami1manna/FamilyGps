@@ -1,4 +1,5 @@
 
+import 'package:familygps/hive/grp_detail_service.dart';
 import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_detail_screen.dart';
 import 'package:familygps/screens/home_screen.dart';
@@ -10,11 +11,13 @@ import 'package:familygps/utils/background_location.dart';
 import 'package:familygps/widgets/check_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+ 
 
 void main() async {
    WidgetsFlutterBinding.ensureInitialized();
   await LocationService.initializeService();
-  
+  // Initialize Hive
+  await HiveService().initHive();
   runApp(ProviderScope(
     child: MyApp(),
   ));
