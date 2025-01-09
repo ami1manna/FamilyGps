@@ -2,7 +2,7 @@ import 'package:familygps/models/group_detail_model.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 
-class HiveService {
+class HiveServiceGroupDetails {
   static const String _groupBoxName = 'group_details';
 
   // Initialize Hive service with the application's directory

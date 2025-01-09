@@ -20,6 +20,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     // Call the function to set the users list from the provider
     ref.read(nameEmailProvider.notifier).setUsersList().then((_) {
       // After fetching the users, navigate to the CheckSession screen
+      
       Timer(const Duration(seconds: 3), () {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const CheckSession()),

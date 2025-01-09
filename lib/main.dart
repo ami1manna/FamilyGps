@@ -15,9 +15,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async {
    WidgetsFlutterBinding.ensureInitialized();
+//  TODO :  MOVE TO SPLASH SCREEN
   await LocationService.initializeService();
   // Initialize Hive
-  await HiveService().initHive();
+  await HiveServiceGroupDetails().initHive();
   runApp(ProviderScope(
     child: MyApp(),
   ));

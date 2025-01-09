@@ -18,7 +18,7 @@ class GroupDetailScreen extends ConsumerStatefulWidget {
 
 class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   final TextEditingController _memberController = TextEditingController();
-  final HiveService _hiveService = HiveService();
+  final HiveServiceGroupDetails _hiveService = HiveServiceGroupDetails();
   final DetailGroupOperation _groupOperation = DetailGroupOperation();
 
   GroupDetailModel? _localGroupDetails;
