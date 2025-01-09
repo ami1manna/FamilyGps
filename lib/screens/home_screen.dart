@@ -1,5 +1,6 @@
 import 'package:appwrite/models.dart';
 import 'package:familygps/controllers/auth.dart';
+import 'package:familygps/controllers/user_operation.dart';
 import 'package:familygps/models/user_model.dart';
 import 'package:familygps/providers/user_provider.dart';
 import 'package:familygps/screens/activity_screen.dart';
@@ -26,12 +27,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   final List<Widget> _pages = [
     const MapScreen(),
     const GroupScreen(),
-    // const ActivityScreen(),
     const ProfileScreen(),
   ];
 
   bool isLoading = true;
   User? _currentUser;
+
+  final UsersDatabaseOperations _databaseOperations = UsersDatabaseOperations();
 
   @override
   void initState() {
@@ -44,29 +46,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     LocationService.stopBackgroundService();
+    if (_currentUser != null) {
+      _updateUserStatus(_currentUser!.$id, 'offline');
+    }
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-  if (_currentUser != null) {
-    switch (state) {
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        // Initialize service before starting
-        LocationService.initializeService().then((_) {
-          LocationService.startBackgroundService();
-        });
-        break;
-      case AppLifecycleState.resumed:
-        LocationService.stopBackgroundService();
-        LocationService.updateUserLocation(_currentUser!.$id);
-        break;
-      default:
-        break;
+    if (_currentUser != null) {
+      switch (state) {
+        case AppLifecycleState.resumed:
+          _updateUserStatus(_currentUser!.$id, 'active');
+          LocationService.stopBackgroundService();
+          LocationService.updateUserLocation(_currentUser!.$id);
+          break;
+
+        case AppLifecycleState.paused:
+        case AppLifecycleState.inactive:
+          _updateUserStatus(_currentUser!.$id, 'idle');
+          LocationService.initializeService().then((_) {
+            LocationService.startBackgroundService();
+          });
+          break;
+
+        case AppLifecycleState.detached:
+          _updateUserStatus(_currentUser!.$id, 'idle');
+          break;
+
+        default:
+          break; 
+      }
     }
   }
-}
 
   Future<void> _fetchUser() async {
     try {
@@ -83,7 +95,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
         // Start location updates
         LocationService.updateUserLocation(_currentUser!.$id);
-        
+
+        // Set user status to active
+        _updateUserStatus(_currentUser!.$id, 'active');
       } else {
         setState(() {
           isLoading = false;
@@ -95,6 +109,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         isLoading = false;
       });
       _showError("Error occurred: $error");
+    }
+  }
+
+  Future<void> _updateUserStatus(String userId, String status) async {
+    try {
+      await _databaseOperations.updateUserStatus(userId, status);
+      debugPrint('User status updated to $status');
+    } catch (e) {
+      debugPrint('Error updating user status: $e');
     }
   }
 

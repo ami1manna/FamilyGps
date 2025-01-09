@@ -37,15 +37,13 @@ class UsersDatabaseOperations {
   // Function to create a new user
   Future<void> addUserToDatabase(
       String userId, String name, String email, String password) async {
-    const databaseId = DATABASE_ID; // Replace with your actual database ID
-    const collectionId =
-        USERS_COLLECTION_ID; // Replace with your actual collection ID
-
+    
+ 
     try {
       print('Attempting to add user $name to database with ID: $userId');
       await databases.createDocument(
-        databaseId: databaseId,
-        collectionId: collectionId,
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
         documentId: userId, // Use userId from Auth system as the document ID
         data: {'name': name, 'email': email, 'password': password},
         permissions: [
@@ -67,12 +65,11 @@ class UsersDatabaseOperations {
   // for fetch user email and names
   Future<List<String>> fetchUsersList() async {
     try {
-      const databaseId = DATABASE_ID; // Ensure this is set correctly
-      const collectionId = USERS_COLLECTION_ID; // Ensure this is set correctly
+       
 
       final result = await databases.listDocuments(
-        databaseId: databaseId,
-        collectionId: collectionId,
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
       );
 
 // Map the documents to a list of email strings
@@ -90,4 +87,24 @@ class UsersDatabaseOperations {
       return []; // Return an empty list in case of unexpected error
     }
   }
+
+    Future<void> updateUserStatus(String userId, String status) async {
+ 
+
+    try {
+       // Update the user document with the new status
+      await databases.updateDocument(
+        databaseId: DATABASE_ID,
+        collectionId: USERS_COLLECTION_ID,
+        documentId: userId,
+        data: {'status': status}, 
+      );
+      print('Status updated successfully.');
+    } on AppwriteException catch (e) {
+      print('Error updating status: ${e.code} - ${e.message}');
+    } catch (e) {
+      print('Unexpected error: $e');
+    }
+  }
+
 }
