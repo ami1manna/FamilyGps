@@ -16,6 +16,8 @@ class HomeDraggableBottomSheet extends ConsumerStatefulWidget {
 
 class _HomeDraggableBottomSheetState
     extends ConsumerState<HomeDraggableBottomSheet> {
+  // Add a DraggableScrollableController
+  final DraggableScrollableController _dragController =   DraggableScrollableController();
   List<String> userGroups = [];
   List<String> groupCode = [];
   bool isLoading = true;
@@ -37,7 +39,7 @@ class _HomeDraggableBottomSheetState
     if (user != null && user.userid != null) {
       try {
         var result = await GroupDbOperation().fetchUserGroups(user.userid!);
-         
+
         setState(() {
           userGroups = result['groupNames'];
           groupCode = result['groupCodes'];
@@ -72,6 +74,7 @@ class _HomeDraggableBottomSheetState
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
+      controller: _dragController, 
       initialChildSize: 0.1,
       minChildSize: 0.1,
       maxChildSize: 0.8,
@@ -104,7 +107,7 @@ class _HomeDraggableBottomSheetState
                 ),
                 _currentPage == 0
                     ? _buildListView(context)
-                    : _buildGroupDetails(context),
+                    : _buildGroupDetails(context,_dragController),
               ],
             ),
           ),
@@ -165,7 +168,6 @@ class _HomeDraggableBottomSheetState
                       onTap: () async {
                         String selectedGroupCode = groupCode[index];
                         try {
-                          
                           await ref
                               .read(userLocationProvider.notifier)
                               .fetchUserLocations(selectedGroupCode);
@@ -184,7 +186,7 @@ class _HomeDraggableBottomSheetState
     );
   }
 
-  Widget _buildGroupDetails(BuildContext context) {
+  Widget _buildGroupDetails(BuildContext context,DraggableScrollableController controller) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Column(
@@ -205,7 +207,7 @@ class _HomeDraggableBottomSheetState
               ),
             ),
           ]),
-          HomeBottomSheetGroupDetail()
+          HomeBottomSheetGroupDetail(dragController: controller)
         ],
       ),
     );

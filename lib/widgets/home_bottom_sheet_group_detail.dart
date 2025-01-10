@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class HomeBottomSheetGroupDetail extends ConsumerStatefulWidget {
-  const HomeBottomSheetGroupDetail({super.key});
+   final DraggableScrollableController dragController;
+    const HomeBottomSheetGroupDetail({
+    super.key, 
+    required this.dragController
+  });
 
  
 
@@ -12,6 +16,10 @@ class HomeBottomSheetGroupDetail extends ConsumerStatefulWidget {
   ConsumerState<HomeBottomSheetGroupDetail> createState() => _HomeBottomSheetGroupDetailState();
 }
 class _HomeBottomSheetGroupDetailState extends ConsumerState<HomeBottomSheetGroupDetail> {
+
+
+
+
   @override
   Widget build(BuildContext context) {
     final userLocations = ref.watch(userLocationProvider);
@@ -92,6 +100,12 @@ class _HomeBottomSheetGroupDetailState extends ConsumerState<HomeBottomSheetGrou
                         ),
                         onTap: () {
                           ref.read(userLocationProvider.notifier).setSelectedUser(user);
+                          // Animate to minimum height
+                          widget.dragController.animateTo(
+                            0.1, // minChildSize
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
                         },
                       ),
                     );
