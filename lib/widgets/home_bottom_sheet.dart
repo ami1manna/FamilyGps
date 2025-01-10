@@ -1,10 +1,8 @@
 import 'package:familygps/controllers/group_db_operation.dart';
-import 'package:familygps/controllers/group_detail_operation.dart';
 import 'package:familygps/providers/locations_provider.dart';
 import 'package:familygps/providers/user_provider.dart';
+import 'package:familygps/widgets/Toast.dart';
 import 'package:familygps/widgets/home_bottom_sheet_group_detail.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -39,12 +37,14 @@ class _HomeDraggableBottomSheetState
     if (user != null && user.userid != null) {
       try {
         var result = await GroupDbOperation().fetchUserGroups(user.userid!);
+         
         setState(() {
           userGroups = result['groupNames'];
           groupCode = result['groupCodes'];
         });
       } catch (e) {
         print('Error fetching user groups: $e');
+        Toast.show(context, 'Error fetching user groups: $e', ToastType.error);
         // Handle error (e.g., show a snackbar)
       } finally {
         setState(() {
@@ -165,11 +165,10 @@ class _HomeDraggableBottomSheetState
                       onTap: () async {
                         String selectedGroupCode = groupCode[index];
                         try {
-                          List<String> memberIds = await DetailGroupOperation()
-                              .fetchGroupMemberIds(selectedGroupCode);
+                          
                           await ref
                               .read(userLocationProvider.notifier)
-                              .fetchUserLocations(memberIds);
+                              .fetchUserLocations(selectedGroupCode);
 
                           _navigateToGroupDetails(userGroups[index]);
                         } catch (e) {
