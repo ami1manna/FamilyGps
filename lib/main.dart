@@ -1,5 +1,6 @@
 
 import 'package:familygps/hive/grp_detail_service.dart';
+import 'package:familygps/hive/user_detail_service.dart';
 import 'package:familygps/screens/activity_screen.dart';
 import 'package:familygps/screens/group_detail_screen.dart';
 import 'package:familygps/screens/home_screen.dart';
@@ -18,7 +19,11 @@ void main() async {
 //  TODO :  MOVE TO SPLASH SCREEN
   await LocationService.initializeService();
   // Initialize Hive
-  await HiveServiceGroupDetails().initHive();
+   // Initialize Hive services
+     
+    await HiveServiceGroupDetails().initHive();
+    await HiveServiceUserDetails().initHive();
+     
   runApp(ProviderScope(
     child: MyApp(),
   ));

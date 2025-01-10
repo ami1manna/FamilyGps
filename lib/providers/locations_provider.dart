@@ -1,5 +1,7 @@
 import 'package:appwrite/models.dart';
 import 'package:familygps/constants/appwrite_config.dart';
+import 'package:familygps/controllers/group_detail_operation.dart';
+import 'package:familygps/hive/grp_detail_service.dart';
 import 'package:familygps/models/users_locations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:appwrite/appwrite.dart';
@@ -11,7 +13,7 @@ class UserLocationProvider extends StateNotifier<List<UserLocation>> {
   late final String usersCollectionId;
   RealtimeSubscription? _subscription; // Made nullable
   UserLocation? _selectedUser ; // Track the selected user
-
+  HiveServiceGroupDetails hiveServiceGroupDetails = HiveServiceGroupDetails();
   // Constructor that initializes the state and Appwrite services
   UserLocationProvider(super._state) {
     Client client = Client()
@@ -38,54 +40,70 @@ class UserLocationProvider extends StateNotifier<List<UserLocation>> {
   }
 
   // Function to subscribe to user locations in real-time
-  void subscribeToUserLocations(List<String> userIds) {
-    // Unsubscribe from any existing subscription
-    _subscription?.close();
+void subscribeToUserLocations(List<String> userIds) async {
+  // Unsubscribe from any existing subscription
+  _subscription?.close();
 
-    _subscription = _realtime.subscribe([
-      'databases.$databaseId.collections.$usersCollectionId.documents'
-    ]);
+  _subscription = _realtime.subscribe([
+    'databases.$databaseId.collections.$usersCollectionId.documents'
+  ]);
 
-    _subscription!.stream.listen((RealtimeMessage message) {
-      if (userIds.contains(message.payload['\$id'])) {
-        double? latitude = message.payload['lat'];
-        double? longitude = message.payload['long'];
-        String? userName = message.payload['name'];
+  _subscription!.stream.listen((RealtimeMessage message) async {
+    if (userIds.contains(message.payload['\$id'])) {
+      double? latitude = message.payload['lat'];
+      double? longitude = message.payload['long'];
+      String? userName = message.payload['name'];
 
-        if (latitude != null && longitude != null && userName != null) {
-          final userId = message.payload['\$id'];
-          final newLocation = UserLocation(
-            userId: userId,
-            latitude: latitude,
-            longitude: longitude,
-            name: userName,
-          );
-
-          // Create a new list with the updated or new location
-          final newState = [...state];
-          final existingIndex = newState.indexWhere((loc) => loc.userId == userId);
-          if (existingIndex >= 0) {
-            newState[existingIndex] = newLocation;
-          } else {
-            newState.add(newLocation);
-          }
-
-          // Update the state with the new list
-          state = newState;
-
-          print('Updated location for ${newLocation.name}: ${newLocation.latitude}, ${newLocation.longitude}');
+      if (latitude != null && longitude != null && userName != null) {
+        final userId = message.payload['\$id'];
+        final newLocation = UserLocation(
+          userId: userId,
+          latitude: latitude,
+          longitude: longitude,
+          name: userName,
+          timestamp: DateTime.now(),
+        );
+        
+        // Save/Update location in Hive
+        // await hiveServiceGroupDetails.saveUserLocation(newLocation);
+        
+        // Create a new list with the updated or new location
+        final newState = [...state];
+        final existingIndex = newState.indexWhere((loc) => loc.userId == userId);
+        if (existingIndex >= 0) {
+          newState[existingIndex] = newLocation;
+        } else {
+          newState.add(newLocation);
         }
+
+        // Update the state with the new list
+        state = newState;
+
+        print('Updated location for ${newLocation.name}: ${newLocation.latitude}, ${newLocation.longitude}');
       }
-    });
-  }
+    }
+  });
+}
+Future  fetchUserLocations(String selectedGroupCode) async {
+  // Call cleanup to clear previous data and unsubscribe
+  cleanup();
+  List<String> memberIds = await DetailGroupOperation()
+                              .fetchGroupMemberIds(selectedGroupCode);
+  List<UserLocation> initialLocations = [];
 
-  Future<void> fetchUserLocations(List<String> userIds) async {
-    // Call cleanup to clear previous data and unsubscribe
-    cleanup();
-
-    List<UserLocation> initialLocations = [];
-
-    for (String userId in userIds) {
+  // Check if local data is available
+  final localData = HiveServiceGroupDetails().getGroupDetails(selectedGroupCode);
+  // if (localData != null && localData.members.isNotEmpty) {
+  //   for (Map<String, dynamic> member in localData.members) {
+  //     initialLocations.add(UserLocation(
+  //       userId: member['userId'] ?? '',
+  //       latitude: double.parse(member['lat'] ?? '0.0'),
+  //       longitude: double.parse(member['long'] ?? '0.0'),
+  //       name: member['name'] ?? '',
+  //     ));
+  //   }
+  // } else {
+    for (String userId in memberIds) {
       try { 
         // Fetch the user's document by their userId
         Document userDoc = await _databases.getDocument(
@@ -113,15 +131,16 @@ class UserLocationProvider extends StateNotifier<List<UserLocation>> {
         print('Error fetching user document for $userId: $e');
       }
     }
-    // by default select first user as selected
-    _selectedUser = initialLocations.isNotEmpty ? initialLocations.first : null;
-    
-    // Update the state with the initial locations
-    state = initialLocations;
+  // }
+  // by default select first user as selected
+  _selectedUser = initialLocations.isNotEmpty ? initialLocations.first : null;
+  
+  // Update the state with the initial locations
+  state = initialLocations;
 
-    // Subscribe to user locations for real-time updates
-    subscribeToUserLocations(userIds);
-  }
+  // Subscribe to user locations for real-time updates
+  subscribeToUserLocations(memberIds);
+}
 
   void setSelectedUser(UserLocation user) {
     _selectedUser = user;

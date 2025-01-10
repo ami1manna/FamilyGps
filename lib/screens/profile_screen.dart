@@ -70,7 +70,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   style: GoogleFonts.roboto(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: colorScheme.onBackground,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
