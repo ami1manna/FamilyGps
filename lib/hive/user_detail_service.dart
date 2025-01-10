@@ -169,9 +169,61 @@ class HiveServiceUserDetails {
         .toList();
   }
 
-  // Close the Hive box when it's no longer needed
-  Future<void> closeBox() async {
-    final box = Hive.box<UserDetailModel>(_userBoxName);
-    await box.close();
+  // Clear all user-related data
+  Future<void> clearAllUserData() async {
+    try {
+      // Close the box if it's open
+      if (Hive.isBoxOpen(_userBoxName)) {
+        final box = Hive.box<UserDetailModel>(_userBoxName);
+        await box.clear(); // Remove all entries
+      } else {
+        // Open and then clear
+        final box = await Hive.openBox<UserDetailModel>(_userBoxName);
+        await box.clear();
+      }
+
+      print('All user data cleared successfully');
+    } catch (e) {
+      print('Error clearing user data: $e');
+      rethrow;
+    }
   }
+
+  // Completely delete the user details box
+  Future<void> deleteUserDetailsBox() async {
+    try {
+      // Close the box if it's open
+      if (Hive.isBoxOpen(_userBoxName)) {
+        await Hive.box<UserDetailModel>(_userBoxName).close();
+      }
+
+      // Delete the box
+      await Hive.deleteBoxFromDisk(_userBoxName);
+      print('User details box deleted successfully');
+    } catch (e) {
+      print('Error deleting user details box: $e');
+      rethrow;
+    }
+  }
+
+  // Comprehensive logout method to clear all local data
+  Future<void> performLogout() async {
+    try {
+      // Clear all user-specific data
+      await clearAllUserData();
+
+      // Close and delete the box
+      await deleteUserDetailsBox();
+
+      // Reinitialize Hive to ensure clean state
+      await initHive();
+
+      print('Logout and data cleanup completed successfully');
+    } catch (e) {
+      print('Error during logout and data cleanup: $e');
+      rethrow;
+    }
+  }
+
+
 }

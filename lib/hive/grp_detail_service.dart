@@ -4,39 +4,39 @@ import 'package:path_provider/path_provider.dart';
 
 class HiveServiceGroupDetails {
   static const String _groupBoxName = 'group_details';
-Future<void> initHive() async {
-  try {
-    // Use path_provider to get the application documents directory
-    final appDocumentDir = await getApplicationDocumentsDirectory();
-    
-    // Initialize Hive with the path
-    await Hive.initFlutter(appDocumentDir.path);
-    
-    // Register adapters BEFORE opening any boxes
-    _registerAdapters();
-    
-    // Open the boxes
-    await Hive.openBox<GroupDetailModel>(_groupBoxName);
-  } catch (e) {
-    print('Error initializing Hive: $e');
-    // Optionally, you might want to delete the existing Hive database
-    await Hive.deleteBoxFromDisk(_groupBoxName);
-    // Retry initialization
-    await initHive();
-  }
-}
+  Future<void> initHive() async {
+    try {
+      // Use path_provider to get the application documents directory
+      final appDocumentDir = await getApplicationDocumentsDirectory();
 
-void _registerAdapters() {
-  if (!Hive.isAdapterRegistered(1)) {
-    Hive.registerAdapter(UserDetailModelAdapter());
+      // Initialize Hive with the path
+      await Hive.initFlutter(appDocumentDir.path);
+
+      // Register adapters BEFORE opening any boxes
+      _registerAdapters();
+
+      // Open the boxes
+      await Hive.openBox<GroupDetailModel>(_groupBoxName);
+    } catch (e) {
+      print('Error initializing Hive: $e');
+      // Optionally, you might want to delete the existing Hive database
+      await Hive.deleteBoxFromDisk(_groupBoxName);
+      // Retry initialization
+      await initHive();
+    }
   }
-  if (!Hive.isAdapterRegistered(3)) {
-    Hive.registerAdapter(GroupDetailModelAdapter());
+
+  void _registerAdapters() {
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(UserDetailModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(3)) {
+      Hive.registerAdapter(GroupDetailModelAdapter());
+    }
+    if (!Hive.isAdapterRegistered(4)) {
+      Hive.registerAdapter(StringListAdapter());
+    }
   }
-  if (!Hive.isAdapterRegistered(4)) {
-    Hive.registerAdapter(StringListAdapter());
-  }
-}
 
   // Save group details to the Hive box
   Future<void> saveGroupDetails(GroupDetailModel groupDetails) async {
@@ -108,7 +108,7 @@ void _registerAdapters() {
     try {
       final box = await Hive.openBox<GroupDetailModel>(_groupBoxName);
       GroupDetailModel? groupDetails = box.get(groupCode);
-      
+
       if (groupDetails != null) {
         if (!groupDetails.members.contains(userId)) {
           groupDetails.members.add(userId);
@@ -127,7 +127,7 @@ void _registerAdapters() {
     try {
       final box = await Hive.openBox<GroupDetailModel>(_groupBoxName);
       GroupDetailModel? groupDetails = box.get(groupCode);
-      
+
       if (groupDetails != null) {
         groupDetails.members.remove(userId);
         groupDetails.updateLastUpdated();
@@ -139,9 +139,60 @@ void _registerAdapters() {
     }
   }
 
-  // Close the Hive box when it's no longer needed
-  Future<void> closeBox() async {
-    final box = Hive.box<GroupDetailModel>(_groupBoxName);
-    await box.close();
+    // Clear all group-related data
+  Future<void> clearAllGroupData() async {
+    try {
+      // Close the box if it's open
+      if (Hive.isBoxOpen(_groupBoxName)) {
+        final box = Hive.box<GroupDetailModel>(_groupBoxName);
+        await box.clear(); // Remove all entries
+      } else {
+        // Open and then clear
+        final box = await Hive.openBox<GroupDetailModel>(_groupBoxName);
+        await box.clear();
+      }
+
+      print('All group data cleared successfully');
+    } catch (e) {
+      print('Error clearing group data: $e');
+      rethrow;
+    }
   }
+
+  // Completely delete the group details box
+  Future<void> deleteGroupDetailsBox() async {
+    try {
+      // Close the box if it's open
+      if (Hive.isBoxOpen(_groupBoxName)) {
+        await Hive.box<GroupDetailModel>(_groupBoxName).close();
+      }
+
+      // Delete the box
+      await Hive.deleteBoxFromDisk(_groupBoxName);
+      print('Group details box deleted successfully');
+    } catch (e) {
+      print('Error deleting group details box: $e');
+      rethrow;
+    }
+  }
+
+  // Comprehensive logout method to clear all local data
+  Future<void> performLogout() async {
+    try {
+      // Clear all group-specific data
+      await clearAllGroupData();
+
+      // Close and delete the box
+      await deleteGroupDetailsBox();
+
+      // Reinitialize Hive to ensure clean state
+      await initHive();
+
+      print('Logout and group data cleanup completed successfully');
+    } catch (e) {
+      print('Error during logout and group data cleanup: $e');
+      rethrow;
+    }
+  }
+
 }

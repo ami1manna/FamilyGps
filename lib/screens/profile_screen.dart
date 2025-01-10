@@ -1,3 +1,5 @@
+import 'package:familygps/hive/grp_detail_service.dart';
+import 'package:familygps/hive/user_detail_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:familygps/providers/user_provider.dart';
@@ -123,6 +125,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       logoutUser();
+                      HiveServiceGroupDetails().performLogout();
+                      HiveServiceUserDetails().performLogout();
                       Navigator.pushReplacementNamed(context, '/signup');
                     },
                     style: ElevatedButton.styleFrom(
