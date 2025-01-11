@@ -54,7 +54,7 @@ Future<String> loginUser(String email, String password) async {
   }
 }
 
-// Check session
+// Check session TODO
 Future<bool> checkSession() async {
   try {
     await account.getSession(sessionId: "current");
