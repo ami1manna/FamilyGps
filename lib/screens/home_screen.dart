@@ -29,14 +29,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     const ProfileScreen(),
   ];
 
-  bool isLoading = true;
-  User? _currentUser;
-
+   
+  
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _fetchUser();
+    
   }
 
   @override
@@ -48,7 +47,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-  if (_currentUser != null) {
+   
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.inactive:
@@ -59,56 +58,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         break;
       case AppLifecycleState.resumed:
         LocationService.stopBackgroundService();
-        LocationService.updateUserLocation(_currentUser!.$id);
+        
         break;
       default:
         break;
     }
-  }
-}
-
-  Future<void> _fetchUser() async {
-    try {
-      final user = await getUser();
-      if (user != null) {
-        setState(() {
-          _currentUser = user;
-          isLoading = false;
-          setUserState();
-        });
-
-        // Save user ID to local storage using LocationServiceRepository
-        await LocationServiceRepository.saveUserId(_currentUser!.$id);
-
-        // Start location updates
-        LocationService.updateUserLocation(_currentUser!.$id);
-        
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        _showError("Failed to fetch user data");
-      }
-    } catch (error) {
-      setState(() {
-        isLoading = false;
-      });
-      _showError("Error occurred: $error");
-    }
-  }
-
-  void setUserState() {
-    UserModel newUser = UserModel(
-      name: _currentUser!.name,
-      email: _currentUser!.email,
-      password: _currentUser!.password,
-      userid: _currentUser!.$id,
-    );
-
-    // Update the user state
-    ref.read(userProvider.notifier).setUser(newUser);
-  }
-
+  } 
+ 
+ 
+ 
   void _onTabChange(int index) {
     setState(() {
       _currentIndex = index; // Update the selected tab
@@ -124,9 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     final user = ref.watch(userProvider);
     return Scaffold(
       appBar: AppBar(
-        title: isLoading
-            ? const Text('Loading...')
-            : Center(
+        title: Center(
                 child: Text(
                   "Welcome ${user!.name[0].toUpperCase()}${user.name.substring(1).toLowerCase()}",
                   textAlign: TextAlign.center,
@@ -137,11 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(23)),
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _currentUser == null
-              ? const Center(child: Text('No user found'))
-              : Column(
+      body:    Column(
                   children: [
                     Expanded(
                       child: IndexedStack(
