@@ -38,7 +38,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     final localData = _hiveService.getGroupDetails(groupCode);
 
     // Determine if network fetch is needed
-    if (_hiveService.shouldFetchFromNetwork(localData)) {
+    if (_groupOperation.shouldFetchFromNetwork(localData)) {
       await _fetchGroupDetailsFromNetwork();
     } else {
       setState(() {
@@ -50,7 +50,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
     // Trigger background sync
     _backgroundSync();
   }
- // Method to fetch detailed member information
+
+  // Method to fetch detailed member information
   Future<List<Map<String, String>>> _fetchMemberDetails() async {
     if (_localGroupDetails == null) return [];
 
@@ -83,61 +84,41 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
   // Update background sync method
   Future<void> _backgroundSync() async {
     try {
-      // Fetch member IDs using the existing method
-      List<String> memberIds = await _groupOperation.fetchGroupMemberIds(groupCode);
-      String groupName = await _groupOperation.fetchGroupNameByCode(groupCode);
-      String creatorId = await _groupOperation.fetchGroupCreatorId(groupCode);
-
-      final groupDetails = GroupDetailModel(
-        groupCode: groupCode,
-        groupName: groupName,
-        creatorId: creatorId,
-        members: memberIds,
-        lastUpdated: DateTime.now(),
-      );
-
-      // Save to local storage
-      await _hiveService.saveGroupDetails(groupDetails);
+      GroupDetailModel? updatedGroupDetails = 
+          await _groupOperation.backgroundSync(groupCode);
 
       // Update UI if different from current state
-      if (mounted && (_localGroupDetails == null || 
-          _localGroupDetails!.members != groupDetails.members)) {
+      if (mounted && updatedGroupDetails != null && 
+          (_localGroupDetails == null || 
+           _localGroupDetails!.members != updatedGroupDetails.members)) {
         setState(() {
-          _localGroupDetails = groupDetails;
+          _localGroupDetails = updatedGroupDetails;
         });
       }
     } catch (e) {
       print('Background sync error: $e');
     }
   }
+
   Future<void> _fetchGroupDetailsFromNetwork() async {
     try {
-      final currentUser = ref.read(userProvider);
-      List<Map<String, String>> members =
-          await _groupOperation.fetchGroupMembers(groupCode);
-      String groupName = await _groupOperation.fetchGroupNameByCode(groupCode);
-      String creatorId = await _groupOperation.fetchGroupCreatorId(groupCode);
+      GroupDetailModel? groupDetails = 
+          await _groupOperation.fetchGroupDetailsFromNetwork(groupCode);
 
-      final groupDetails = GroupDetailModel(
-        groupCode: groupCode,
-        groupName: groupName,
-        creatorId: creatorId,
-        members: members.map((m) => m['userId']!).toList(),
-        lastUpdated: DateTime.now(),
-      );
-
-      // Save to local storage
-      await _hiveService.saveGroupDetails(groupDetails);
-
-      setState(() {
-        _localGroupDetails = groupDetails;
-        _isLoading = false;
-      });
+      if (groupDetails != null) {
+        setState(() {
+          _localGroupDetails = groupDetails;
+          _isLoading = false;
+        });
+      } else {
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
       print('Error fetching group details: $e');
       setState(() => _isLoading = false);
     }
   }
+ 
 
   Future<void> _addMember() async {
     String newMember = _memberController.text.trim();

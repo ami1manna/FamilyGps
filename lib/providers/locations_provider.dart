@@ -134,91 +134,63 @@ class UserLocationProvider extends StateNotifier<List<UserLocation>> {
     return null;
   }
 
-  // Function to subscribe to user locations in real-time
-  Future<void> fetchUserLocations(String selectedGroupCode) async {
-    // Call cleanup to clear previous data and unsubscribe
-    cleanup();
+ Future<void> fetchUserLocations(String selectedGroupCode) async {
+  // Call cleanup to clear previous data and unsubscribe
+  cleanup();
 
-    List<String> memberIds =
-        await DetailGroupOperation().fetchGroupMemberIds(selectedGroupCode);
-    List<UserLocation> initialLocations = [];
+  List<UserLocation> initialLocations = [];
 
-    // Check if local data is available
-    final localData =
-        HiveServiceGroupDetails().getGroupDetails(selectedGroupCode);
+  // Check if local data is available
+  final localData = HiveServiceGroupDetails().getGroupDetails(selectedGroupCode);
 
-    if (localData != null && localData.members.isNotEmpty) {
-      for (String userId in localData.members) {
-        // Fetch user details from Hive
-        UserDetailModel? userDetails =
-            HiveServiceUserDetails().getUserDetails(userId);
-
-        if (userDetails != null) {
-          initialLocations.add(UserLocation(
-            userId: userId,
-            latitude: userDetails.lat ?? 0.0,
-            longitude: userDetails.long ?? 0.0,
-            name: userDetails.name ?? '',
-          ));
-        }
+  if (localData != null && localData.members.isNotEmpty) {
+     
+    for (String userId in localData.members) {
+      // Fetch user details from Hive
+      UserDetailModel? userDetails =
+          HiveServiceUserDetails().getUserDetails(userId);
+      
+      if (userDetails != null) {
+        initialLocations.add(UserLocation(
+          userId: userId,
+          latitude: userDetails.lat ?? 0.0,
+          longitude: userDetails.long ?? 0.0,
+          name: userDetails.name ?? '',
+        ));
       }
     }
-
-    // If no local data or empty, fetch from database
-    if (initialLocations.isEmpty) {
-      for (String userId in memberIds) {
-        try {
-          // Fetch the user's document by their userId
-          Document userDoc = await _databases.getDocument(
-            databaseId: databaseId,
-            collectionId: usersCollectionId,
-            documentId: userId,
-          );
-
-          // Fetch latitude and longitude and ensure they are doubles
-          double latitude = (userDoc.data['lat'] is int)
-              ? (userDoc.data['lat'] as int).toDouble()
-              : (userDoc.data['lat'] as double? ??
-                  0.0); // Default to 0.0 if not found
-
-          double longitude = (userDoc.data['long'] is int)
-              ? (userDoc.data['long'] as int).toDouble()
-              : (userDoc.data['long'] as double? ??
-                  0.0); // Default to 0.0 if not found
-
-          // Save user details to Hive for future use
-          UserDetailModel userDetails = UserDetailModel(
-            userId: userId,
-            name: userDoc.data['name'] as String,
-            email: userDoc.data['email'] as String,
-            lat: latitude,
-            long: longitude,
-            status: userDoc.data['status'] ?? 'offline',
-          );
-          await HiveServiceUserDetails().saveUserDetails(userDetails);
-
-          initialLocations.add(UserLocation(
-            userId: userId,
-            latitude: latitude,
-            longitude: longitude,
-            name: userDoc.data['name'] as String,
-          ));
-        } catch (e) {
-          print('Error fetching user document for $userId: $e');
-        }
-      }
-    }
-
-    // by default select first user as selected
-    _selectedUser = initialLocations.isNotEmpty ? initialLocations.first : null;
-
-    // Update the state with the initial locations
-    state = initialLocations;
-
-    // Subscribe to user locations for real-time updates
-    subscribeToUserLocations(memberIds);
   }
 
+  // If no local data or empty, fetch from database
+  if (initialLocations.isEmpty) {
+     print("group: is empty");
+    // Fetch group members using DetailGroupOperation
+    List<Map<String, String>> memberDetails =
+        await DetailGroupOperation().fetchGroupMembers(selectedGroupCode);
+
+    for (Map<String, String> memberDetail in memberDetails) {
+      String userId = memberDetail['userId']!;
+      
+      // Create UserLocation from fetched details
+      initialLocations.add(UserLocation(
+        userId: userId,
+        latitude: double.tryParse(memberDetail['lat'] ?? '0.0') ?? 0.0,
+        longitude: double.tryParse(memberDetail['long'] ?? '0.0') ?? 0.0,
+        name: memberDetail['name'] ?? '',
+      ));
+    }
+  }
+
+  // by default select first user as selected
+  _selectedUser = initialLocations.isNotEmpty ? initialLocations.first : null;
+
+  // Update the state with the initial locations
+  state = initialLocations;
+
+  // Subscribe to user locations for real-time updates
+  subscribeToUserLocations(localData?.members ?? 
+    initialLocations.map((loc) => loc.userId).toList());
+}
   void setSelectedUser(UserLocation user) {
     _selectedUser = user;
     // Notify listeners that the selected user has changed
