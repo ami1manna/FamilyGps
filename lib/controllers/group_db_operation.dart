@@ -38,7 +38,7 @@ class GroupDbOperation {
           return groupCode;
         }
       } catch (e) {
-        print('Error checking for existing code: $e');
+        // print('Error checking for existing code: $e');
       }
     }
   }
@@ -97,7 +97,7 @@ class GroupDbOperation {
 
       return 'Group created successfully';
     } catch (e) {
-      print('ERROR: creating group: $e');
+      // print('ERROR: creating group: $e');
       return 'ERROR: creating group.';
     }
   }
@@ -126,9 +126,9 @@ class GroupDbOperation {
         data: {'groups': groups},
       );
 
-      print('Group code added to user document successfully');
+      // print('Group code added to user document successfully');
     } catch (e) {
-      print('ERROR: updating user document with group code: $e');
+      // print('ERROR: updating user document with group code: $e');
     }
   }
 

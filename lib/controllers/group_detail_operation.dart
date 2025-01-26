@@ -375,7 +375,126 @@ class DetailGroupOperation {
     }
   }
 
+ 
+
+  // New method for background sync
+  Future<GroupDetailModel?> backgroundSync(String groupCode) async {
+    try {
+      // Fetch member IDs using the existing method
+      List<String> memberIds = await fetchGroupMemberIds(groupCode);
+      String groupName = await fetchGroupNameByCode(groupCode);
+      String creatorId = await fetchGroupCreatorId(groupCode);
+
+      if (memberIds.isEmpty) return null;
+
+      final groupDetails = GroupDetailModel(
+        groupCode: groupCode,
+        groupName: groupName,
+        creatorId: creatorId,
+        members: memberIds,
+        lastUpdated: DateTime.now(),
+      );
+
+      // Save to local storage
+      await _hiveGroupService.saveGroupDetails(groupDetails);
+
+      return groupDetails;
+    } catch (e) {
+      print('Background sync error: $e');
+      return null;
+    }
+  }
+
+  // New method for fetching group details from network
+  Future<GroupDetailModel?> fetchGroupDetailsFromNetwork(String groupCode) async {
+    try {
+      List<Map<String, String>> members = await fetchGroupMembers(groupCode);
+      String groupName = await fetchGroupNameByCode(groupCode);
+      String creatorId = await fetchGroupCreatorId(groupCode);
+
+      if (members.isEmpty) return null;
+
+      final groupDetails = GroupDetailModel(
+        groupCode: groupCode,
+        groupName: groupName,
+        creatorId: creatorId,
+        members: members.map((m) => m['userId']!).toList(),
+        lastUpdated: DateTime.now(),
+      );
+
+      // Save to local storage
+      await _hiveGroupService.saveGroupDetails(groupDetails);
+
+      return groupDetails;
+    } catch (e) {
+      print('Error fetching group details: $e');
+      return null;
+    }
+  }
+
+  // Method to check if network fetch is needed
+  bool shouldFetchFromNetwork(GroupDetailModel? localData) {
+    if (localData == null) return true;
+
+    // Define your logic for when to fetch from network
+    // For example, if data is older than 1 hour
+    final now = DateTime.now();
+    final lastUpdated = localData.lastUpdated;
+    return now.difference(lastUpdated).inHours >= 1;
+  }
 
 
+Future<void> reloadAllUserGroupData(String userId) async {
+  try {
+    // Fetch user document to get all groups
+    Document? userDoc = await _fetchUserDocument(userId);
+    if (userDoc == null) {
+      print('User not found');
+      return;
+    }
+
+    // Extract user's groups
+    List<dynamic> userGroups = userDoc.data['groups'] ?? [];
+
+    // Iterate through each group and fetch/save group details
+    for (String groupCode in userGroups) {
+      try {
+        // Fetch and save group details
+        await backgroundSync(groupCode);
+
+        // Fetch and save group members details
+        List<Map<String, String>> members = await fetchGroupMembers(groupCode);
+
+        // Save each member's details to Hive
+        for (var member in members) {
+          String memberId = member['userId']!;
+          
+          // Create UserDetailModel
+          UserDetailModel userDetails = UserDetailModel(
+            userId: memberId,
+            name: member['name'] ?? 'Unknown',
+            email: member['email'] ?? 'Unknown',
+            lat: double.tryParse(member['lat'] ?? '0'),
+            long: double.tryParse(member['long'] ?? '0'),
+            status: member['status'] ?? 'offline',
+            lastUpdatedLocation: DateTime.now(),
+          );
+
+          // Save user details to Hive
+          await _hiveUserService.saveUserDetails(userDetails);
+        }
+      } catch (groupError) {
+        print('Error processing group $groupCode: $groupError');
+      }
+    }
+
+    print('Successfully reloaded all group and user data');
+  } catch (e) {
+    print('Error reloading user group data: $e');
+  }
+}
 
 }
+
+
+ 

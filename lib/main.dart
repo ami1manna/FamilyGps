@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
       ),
       home: SplashScreen(),
       routes: {
-        '/check_session': (context) => const CheckSession(),
+        // '/check_session': (context) => const CheckSession(),
         '/home': (context) => HomeScreen(),
         '/signup': (context) => const SignupScreen(),
         '/login': (context) => LoginScreen(),

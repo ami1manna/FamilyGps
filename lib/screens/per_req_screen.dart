@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:familygps/controllers/auth.dart';
+import 'package:familygps/controllers/group_detail_operation.dart';
+import 'package:familygps/models/user_model.dart';
+import 'package:familygps/providers/user_provider.dart';
+import 'package:familygps/utils/background_location.dart';
+import 'package:familygps/utils/store_data.dart';
+import 'package:familygps/utils/permissions.dart';
 import 'dart:io';
 
-class PermissionRequestScreen extends StatefulWidget {
+class PermissionRequestScreen extends ConsumerStatefulWidget {
   const PermissionRequestScreen({super.key});
 
   @override
@@ -12,10 +20,11 @@ class PermissionRequestScreen extends StatefulWidget {
       _PermissionRequestScreenState();
 }
 
-class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
+class _PermissionRequestScreenState extends ConsumerState<PermissionRequestScreen> {
   bool locationPermissionGranted = false;
   bool backgroundPermissionGranted = false;
   bool notificationPermissionGranted = false;
+  bool _isLoading = false;
   int androidSdkVersion = 0;
 
   @override
@@ -36,31 +45,38 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
   }
 
   Future<void> checkPermissions() async {
-    // Check location permission
-    LocationPermission locationPermission = await Geolocator.checkPermission();
-    setState(() {
-      locationPermissionGranted =
-          locationPermission == LocationPermission.always ||
-              locationPermission == LocationPermission.whileInUse;
-    });
+    try {
+      // Check location permission
+      LocationPermission locationPermission = await Geolocator.checkPermission();
+      setState(() {
+        locationPermissionGranted =
+            locationPermission == LocationPermission.always ||
+                locationPermission == LocationPermission.whileInUse;
+      });
 
-    // Check background permission
-    bool backgroundPermission = await Permission.locationAlways.isGranted;
-    setState(() {
-      backgroundPermissionGranted = backgroundPermission;
-    });
+      // Check background permission
+      bool backgroundPermission = await Permission.locationAlways.isGranted;
+      setState(() {
+        backgroundPermissionGranted = backgroundPermission;
+      });
 
-    // Check notification permission
-    bool notificationPermission = await _checkNotificationPermission();
-    setState(() {
-      notificationPermissionGranted = notificationPermission;
-    });
+      // Check notification permission
+      bool notificationPermission = await _checkNotificationPermission();
+      setState(() {
+        notificationPermissionGranted = notificationPermission;
+      });
 
-    // Redirect if all permissions are granted
-    if (locationPermissionGranted &&
-        backgroundPermissionGranted &&
-        notificationPermissionGranted) {
-      navigateToHomeScreen();
+      // Redirect if all permissions are granted
+      if (locationPermissionGranted &&
+          backgroundPermissionGranted &&
+          notificationPermissionGranted) {
+        navigateToHomeScreen();
+      }
+    } catch (e) {
+      print('Error checking permissions: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error checking permissions: $e')),
+      );
     }
   }
 
@@ -231,8 +247,7 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
             ),
             TextButton(
               child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
+              onPressed: () { Navigator.of(context).pop();
               },
             ),
           ],
@@ -249,8 +264,57 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
     }
   }
 
-  void navigateToHomeScreen() {
-    Navigator.pushReplacementNamed(context, '/home');
+  Future<void> navigateToHomeScreen() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Fetch the current user
+      final fetchedUser  = await getUser ();
+      
+      if (fetchedUser  != null) {
+        // Create UserModel
+        UserModel newUser  = UserModel(
+          name: fetchedUser .name,
+          email: fetchedUser .email,
+          password: fetchedUser .password ?? '',
+          userid: fetchedUser .$id,
+        );
+
+        // Update user provider
+        ref.read(userProvider.notifier).setUser (newUser );
+
+        // Save user ID to local storage
+        await LocationServiceRepository.saveUserId(fetchedUser .$id);
+
+        // Reload all group and user data
+        await DetailGroupOperation().reloadAllUserGroupData(fetchedUser .$id);
+
+        // Start location updates
+        LocationService.updateUserLocation(fetchedUser .$id);
+
+        // Navigate to home screen
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        // If no user is found, navigate to signup
+        Navigator.pushReplacementNamed(context, '/signup');
+      }
+    } catch (error) {
+      print('Error during home screen navigation: $error');
+      
+      // Show error to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error initializing user data: $error')),
+      );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Fallback to signup in case of any error
+      Navigator.pushReplacementNamed(context, '/signup');
+    }
   }
 
   @override
@@ -260,7 +324,9 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
         title: const Text("Permissions Required"),
         centerTitle: true,
       ),
-      body: Padding(
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,7 +353,7 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
                 ),
                 onPressed: locationPermissionGranted
                     ? null
-                    : requestLocationPermission,
+                    : () => requestLocationPermission(),
                 child: const Text("Allow", style: TextStyle(fontSize: 15)),
               ),
             ),
@@ -307,7 +373,7 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
                 ),
                 onPressed: backgroundPermissionGranted
                     ? null
-                    : requestBackgroundPermission,
+                    : () => requestBackgroundPermission(),
                 child: const Text("Allow", style: TextStyle(fontSize: 15)),
               ),
             ),
@@ -333,18 +399,16 @@ class _PermissionRequestScreenState extends State<PermissionRequestScreen> {
                     ),
                     onPressed: notificationPermissionGranted
                         ? null
-                        : requestNotificationPermission,
+                        : () => requestNotificationPermission(),
                     child: const Text("Allow", style: TextStyle(fontSize: 15)),
                   )
                 : null,
             ),
             const SizedBox(height: 32),
-            if (locationPermissionGranted &&
-                backgroundPermissionGranted &&
-                notificationPermissionGranted)
+            if (locationPermissionGranted && backgroundPermissionGranted && notificationPermissionGranted)
               Center(
                 child: ElevatedButton(
-                  onPressed: navigateToHomeScreen,
+                  onPressed: () => navigateToHomeScreen(),
                   child: const Text("Continue to App"),
                 ),
               ),
