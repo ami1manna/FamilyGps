@@ -35,7 +35,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    
+     LocationService.initializeService().then((_) {
+          LocationService.startBackgroundService();
+        });
   }
 
   @override
@@ -48,21 +50,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
    
-    switch (state) {
-      case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        // Initialize service before starting
-        LocationService.initializeService().then((_) {
-          LocationService.startBackgroundService();
-        });
-        break;
-      case AppLifecycleState.resumed:
-        LocationService.stopBackgroundService();
+    // switch (state) {
+    //   case AppLifecycleState.paused:
+    //   case AppLifecycleState.inactive:
+    //     // Initialize service before starting
+    //     LocationService.initializeService().then((_) {
+    //       LocationService.startBackgroundService();
+    //     });
+    //     break;
+    //   case AppLifecycleState.resumed:
+    //     LocationService.stopBackgroundService();
         
-        break;
-      default:
-        break;
-    }
+    //     break;
+    //   default:
+    //     break;
+    // }
   } 
  
  

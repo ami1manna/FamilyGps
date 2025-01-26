@@ -127,7 +127,7 @@ class LocationService {
   // Start Periodic Location Update
   static void _startPeriodicLocationUpdate(ServiceInstance service) {
     _locationUpdateTimer = Timer.periodic(
-      const Duration(minutes: 5), 
+      const Duration(minutes: 2), 
       (timer) async {
         try {
           // Check User and Permissions
