@@ -45,7 +45,7 @@ class _HomeBottomSheetGroupDetailState extends ConsumerState<HomeBottomSheetGrou
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8.0),
                         side: selectedUser?.userId == user.userId 
-                            ? BorderSide(color: Theme.of(context).primaryColor.withValues(alpha: 0.5), width: 2.0)
+                            ? BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.2), width: 2.0)
                             : BorderSide.none,
                       ),
                       child: ListTile(
@@ -53,7 +53,7 @@ class _HomeBottomSheetGroupDetailState extends ConsumerState<HomeBottomSheetGrou
                         leading: CircleAvatar(
                           backgroundColor: selectedUser?.userId == user.userId 
                               ? Theme.of(context).primaryColor
-                              : Theme.of(context).primaryColor.withValues(alpha: 0.2),
+                              : Theme.of(context).primaryColor.withOpacity(0.2),
                           child: Text(
                             user.name[0],
                             style: TextStyle(
